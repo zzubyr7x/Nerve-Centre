@@ -117,6 +117,17 @@
     color: #cfcac4;
     white-space: nowrap;
   }
+  .shell .topbar button.action.small {
+    background: transparent;
+    border: 1px solid #55504a;
+    color: #cfcac4;
+  }
+  .shell .topbar button.action.small.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .shell .topbar button.action.small:hover { color: white; border-color: #cfcac4; }
   .shell .screen {
     min-height: 160px;
     padding: 22px 24px;
@@ -186,6 +197,8 @@
   button.action.primary:hover { color: white; opacity: 0.9; }
   button.action.small { padding: 4px 10px; font-size: 12px; }
   button.action.danger:hover { border-color: var(--accent); color: var(--accent); }
+  button.action.danger-fill { background: var(--accent); color: white; border-color: var(--accent); }
+  button.action.danger-fill:hover { opacity: 0.9; color: white; }
 
   /* --- modal --- */
   .modal-overlay {
@@ -273,10 +286,13 @@
 <header class="intro">
   <h1>Branch management (Admin UI)</h1>
   <p>
-    Question this demo answers: <strong>does a standalone Admin screen — separate from the six role-gated
-    content hubs — let Admin list, add, edit, and deactivate/reactivate branches, with no way to permanently
-    delete one, and with duplicate names rejected?</strong>
-    Free-play the table below, or click through a guided scenario. Everything resets when you restart a scenario.
+    Question this demo answers: <strong>does a standalone admin screen — separate from the six role-gated
+    content hubs, and reachable by both Admin and National Exco — let them list, add, edit, delete, and mark
+    a branch active/inactive, with duplicate names rejected?</strong>
+    Active/Inactive here is a health-and-activity status (does this branch currently have momentum?), not a
+    stand-in for whether the branch still exists — that's what Delete is for.
+    Free-play the table below (toggle who's logged in via the topbar), or click through a guided scenario.
+    Everything resets when you restart a scenario.
   </p>
   <p class="note">Per issue #12's role model: Branch is an admin-managed, open-ended list (same pattern as Department, issue #14 — not built here, but this screen's shape is meant to generalize to it).</p>
 </header>
@@ -301,7 +317,9 @@
         <span class="brand">Save7OS</span>
         <span class="crumb">Admin › Branches</span>
         <span class="spacer"></span>
-        <span class="who">Logged in as Admin</span>
+        <span class="who">Logged in as</span>
+        <button class="action small" data-switchviewer="Admin" id="viewer-admin">Admin</button>
+        <button class="action small" data-switchviewer="National Exco" id="viewer-exco">National Exco</button>
       </div>
       <div class="screen" id="shell-screen"></div>
     </div>
@@ -342,7 +360,7 @@ const initialState = {
     { id: 6, name: "Rhodes", active: false },
   ],
   nextId: 7,
-  modal: null, // { mode: 'add' | 'edit', id, draftName, error }
+  modal: null, // { mode: 'add' | 'edit', id, draftName, error } | { mode: 'delete', id, name }
 };
 
 function reducer(state, action) {
@@ -354,6 +372,17 @@ function reducer(state, action) {
       const branch = state.branches.find(b => b.id === action.id);
       if (!branch) return state;
       return { ...state, modal: { mode: "edit", id: branch.id, draftName: branch.name, error: null } };
+    }
+
+    case "OPEN_DELETE_MODAL": {
+      const branch = state.branches.find(b => b.id === action.id);
+      if (!branch) return state;
+      return { ...state, modal: { mode: "delete", id: branch.id, name: branch.name } };
+    }
+
+    case "CONFIRM_DELETE": {
+      if (!state.modal || state.modal.mode !== "delete") return state;
+      return { ...state, branches: state.branches.filter(b => b.id !== state.modal.id), modal: null };
     }
 
     case "CLOSE_MODAL":
@@ -401,8 +430,15 @@ function reducer(state, action) {
 
 let state = initialState;
 let callout = "";
+let viewer = "Admin"; // who's "logged in" — Admin and National Exco share this screen equally
 
 function dispatch(action) {
+  if (action.type === "SWITCH_VIEWER") {
+    viewer = action.viewer;
+    callout = `Switched viewer to ${viewer} — same screen, same abilities.`;
+    render();
+    return;
+  }
   state = reducer(state, action);
   callout = describeTransition(action, state);
   render();
@@ -419,8 +455,10 @@ function describeTransition(action, next) {
   }
   if (action.type === "TOGGLE_ACTIVE") {
     const b = next.branches.find(b => b.id === action.id);
-    return b.active ? `Reactivated "${b.name}".` : `Deactivated "${b.name}" — hidden from pickers, row kept (no delete).`;
+    return b.active ? `Marked "${b.name}" active again.` : `Marked "${b.name}" inactive — still exists, still editable, just flagged as needing a push to get moving again.`;
   }
+  if (action.type === "OPEN_DELETE_MODAL") return `Opened delete confirmation for "${next.modal.name}".`;
+  if (action.type === "CONFIRM_DELETE") return "Branch permanently deleted.";
   return "";
 }
 
@@ -432,8 +470,13 @@ function render() {
   document.getElementById("f-total").textContent = state.branches.length;
   document.getElementById("f-active").textContent = active;
   document.getElementById("f-inactive").textContent = inactive;
-  document.getElementById("f-modal").textContent = state.modal ? (state.modal.mode === "add" ? "Add branch (open)" : "Edit branch (open)") : "closed";
+  document.getElementById("f-modal").textContent = state.modal
+    ? { add: "Add branch (open)", edit: "Edit branch (open)", delete: "Delete confirmation (open)" }[state.modal.mode]
+    : "closed";
   document.getElementById("f-callout").textContent = callout;
+
+  document.getElementById("viewer-admin").classList.toggle("active", viewer === "Admin");
+  document.getElementById("viewer-exco").classList.toggle("active", viewer === "National Exco");
 
   renderScreen();
   renderScenario();
@@ -448,7 +491,8 @@ function renderScreen() {
       <td>
         <div class="row-actions">
           <button class="action small" data-edit="${b.id}">Edit</button>
-          <button class="action small danger" data-toggle="${b.id}">${b.active ? "Deactivate" : "Reactivate"}</button>
+          <button class="action small" data-toggle="${b.id}">${b.active ? "Mark inactive" : "Mark active"}</button>
+          <button class="action small danger" data-delete="${b.id}">Delete</button>
         </div>
       </td>
     </tr>
@@ -458,7 +502,7 @@ function renderScreen() {
     <div class="screen-head">
       <div>
         <h3>Branches</h3>
-        <p class="sub">Admin-managed list. Deactivating a branch hides it from pickers elsewhere but never deletes its row.</p>
+        <p class="sub">Active/Inactive reflects current momentum, not existence — an inactive branch is still fully editable and just needs a push. Delete removes a branch from the table for good.</p>
       </div>
       <button class="action primary" data-openadd>+ Add branch</button>
     </div>
@@ -472,6 +516,20 @@ function renderScreen() {
 }
 
 function renderModal(modal) {
+  if (modal.mode === "delete") {
+    return `
+      <div class="modal-overlay" data-modaloverlay>
+        <div class="modal-box">
+          <h3>Delete branch</h3>
+          <p class="hint">This permanently removes "${modal.name}" from the table. This cannot be undone.</p>
+          <div class="modal-actions">
+            <button class="action" data-closemodal>Cancel</button>
+            <button class="action danger-fill" data-confirmdelete>Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
   const title = modal.mode === "add" ? "Add branch" : "Edit branch";
   return `
     <div class="modal-overlay" data-modaloverlay>
@@ -500,8 +558,15 @@ document.body.addEventListener("click", (e) => {
   const toggleBtn = e.target.closest("[data-toggle]");
   if (toggleBtn) { dispatch({ type: "TOGGLE_ACTIVE", id: Number(toggleBtn.dataset.toggle) }); afterScenarioClick(); return; }
 
+  const deleteBtn = e.target.closest("[data-delete]");
+  if (deleteBtn) { dispatch({ type: "OPEN_DELETE_MODAL", id: Number(deleteBtn.dataset.delete) }); afterScenarioClick(); return; }
+
   if (e.target.closest("[data-closemodal]")) { dispatch({ type: "CLOSE_MODAL" }); afterScenarioClick(); return; }
   if (e.target.closest("[data-submitmodal]")) { dispatch({ type: "SUBMIT_MODAL" }); afterScenarioClick(); return; }
+  if (e.target.closest("[data-confirmdelete]")) { dispatch({ type: "CONFIRM_DELETE" }); afterScenarioClick(); return; }
+
+  const viewerBtn = e.target.closest("[data-switchviewer]");
+  if (viewerBtn) { viewer = viewerBtn.dataset.switchviewer; callout = `Switched viewer to ${viewer} — same screen, same abilities.`; render(); return; }
 
   // clicking the dim overlay itself (not the box) also cancels, like a real modal
   if (e.target.matches("[data-modaloverlay]")) { dispatch({ type: "CLOSE_MODAL" }); afterScenarioClick(); return; }
@@ -557,12 +622,34 @@ const SCENARIOS = [
     ],
   },
   {
-    key: "deactivate-reactivate",
-    label: "Deactivate and reactivate — no delete",
-    description: "Deactivate UJ. Its row stays in the table (struck through, badged Inactive) — there is no delete button anywhere. Then reactivate it and confirm it's back to normal.",
+    key: "mark-inactive-active",
+    label: "Mark inactive, then active again",
+    description: "Active/Inactive is a health-and-activity status, not an existence flag. Mark UJ inactive — its row stays in the table (struck through, badged Inactive), still fully editable — then mark it active again once it picks back up.",
     steps: [
-      { label: "Deactivate UJ", action: { type: "TOGGLE_ACTIVE", id: 5 } },
-      { label: "Reactivate UJ", action: { type: "TOGGLE_ACTIVE", id: 5 } },
+      { label: "Mark UJ inactive", action: { type: "TOGGLE_ACTIVE", id: 5 } },
+      { label: "Mark UJ active again", action: { type: "TOGGLE_ACTIVE", id: 5 } },
+    ],
+  },
+  {
+    key: "delete-with-confirmation",
+    label: "Delete a branch (guarded by confirmation)",
+    description: "Deleting is permanent, unlike marking a branch inactive — so it's guarded by a confirmation step. First cancel out of a delete to prove it's a no-op, then go through with it and watch Rhodes disappear from the table entirely.",
+    steps: [
+      { label: "Click Delete on Rhodes", action: { type: "OPEN_DELETE_MODAL", id: 6 } },
+      { label: "Click Cancel — should NOT delete", action: { type: "CLOSE_MODAL" } },
+      { label: "Click Delete on Rhodes again", action: { type: "OPEN_DELETE_MODAL", id: 6 } },
+      { label: "Confirm Delete — row is gone for good", action: { type: "CONFIRM_DELETE" } },
+    ],
+  },
+  {
+    key: "shared-access",
+    label: "Admin and National Exco share this screen",
+    description: "This screen isn't Admin-exclusive — National Exco can add branches here too, with identical ability. Switch the viewer to National Exco and add a branch, same as Admin could.",
+    steps: [
+      { label: "Switch viewer to National Exco", action: { type: "SWITCH_VIEWER", viewer: "National Exco" } },
+      { label: "Click + Add branch", action: { type: "OPEN_ADD_MODAL" } },
+      { label: "Type \"NWU\"", action: { type: "SET_DRAFT_NAME", name: "NWU" } },
+      { label: "Click Save", action: { type: "SUBMIT_MODAL" } },
     ],
   },
 ];
@@ -574,6 +661,7 @@ function startScenario(index) {
   activeScenario = index;
   scenarioStep = 0;
   state = initialState;
+  viewer = "Admin";
   callout = "Scenario reset. Press each step in order.";
   render();
 }
