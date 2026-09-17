@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PROTOTYPE — Branch management admin UI (issue #4)</title>
+<style>
+  :root {
+    --accent: #b3261e;
+    --ink: #1b1b1f;
+    --paper: #faf9f7;
+    --line: #ddd8d2;
+    --muted: #6b6660;
+    --ok: #2e7d32;
+    --off: #8a8580;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .banner {
+    background: var(--accent);
+    color: white;
+    text-align: center;
+    padding: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  header.intro {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 28px 24px 8px;
+  }
+  header.intro h1 { font-size: 20px; margin: 0 0 6px; }
+  header.intro p { color: var(--muted); margin: 0 0 6px; font-size: 14px; }
+  header.intro p.note { font-size: 12px; font-style: italic; }
+
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px 24px 60px;
+    display: grid;
+    gap: 20px;
+  }
+
+  section {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  section h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  /* --- state panel --- */
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .state-field {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .state-field .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .state-field .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .callout {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    min-height: 18px;
+  }
+
+  /* --- the simulated app shell --- */
+  .shell {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .shell .topbar {
+    background: var(--ink);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+    height: 46px;
+  }
+  .shell .topbar .brand {
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .shell .topbar .crumb {
+    font-size: 12px;
+    color: #cfcac4;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .shell .topbar .spacer { flex: 1; }
+  .shell .topbar .who {
+    font-size: 12px;
+    color: #cfcac4;
+    white-space: nowrap;
+  }
+  .shell .screen {
+    min-height: 160px;
+    padding: 22px 24px;
+    background: white;
+  }
+  .shell .screen h3 { margin: 0 0 4px; font-size: 16px; }
+  .shell .screen p.sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+
+  .screen-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  table.branch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  table.branch-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.branch-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  table.branch-table tr.inactive td { color: var(--off); }
+  table.branch-table tr.inactive .name { text-decoration: line-through; text-decoration-color: var(--line); }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge.active { background: rgba(46,125,50,0.12); color: var(--ok); }
+  .badge.inactive { background: rgba(138,133,128,0.15); color: var(--off); }
+
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+  /* --- free play / action buttons --- */
+  .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn-group h3 { flex-basis: 100%; font-size: 12px; color: var(--muted); margin: 8px 0 2px; }
+  button.action {
+    background: white;
+    border: 1px solid var(--line);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  button.action:hover { border-color: var(--accent); color: var(--accent); }
+  button.action:disabled { opacity: 0.35; cursor: not-allowed; }
+  button.action.primary { background: var(--ink); color: white; border-color: var(--ink); }
+  button.action.primary:hover { color: white; opacity: 0.9; }
+  button.action.small { padding: 4px 10px; font-size: 12px; }
+  button.action.danger:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* --- modal --- */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(27,27,31,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  .modal-box {
+    background: white;
+    border-radius: 10px;
+    padding: 20px 22px;
+    width: 320px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .modal-box h3 { margin: 0 0 4px; font-size: 15px; }
+  .modal-box p.hint { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .modal-box label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .modal-box input[type=text] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .modal-box input[type=text].invalid { border-color: var(--accent); }
+  .modal-error { color: var(--accent); font-size: 12px; min-height: 16px; margin-bottom: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* --- walkthrough tabs --- */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tab {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .tab.active { background: var(--ink); color: white; border-color: var(--ink); }
+  .scenario-desc { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .steps { display: flex; flex-direction: column; gap: 6px; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+  }
+  .step.done { opacity: 0.5; }
+  .step .n {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: white;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step button.action { margin-left: auto; }
+  .reset-link {
+    background: none; border: none; color: var(--muted);
+    text-decoration: underline; cursor: pointer; font-size: 12px; padding: 0;
+  }
+  .generalize-note {
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px dashed var(--line);
+    margin-top: 14px;
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">Prototype — throwaway code, answers one question, not for production</div>
+
+<header class="intro">
+  <h1>Branch management (Admin UI)</h1>
+  <p>
+    Question this demo answers: <strong>does a standalone Admin screen — separate from the six role-gated
+    content hubs — let Admin list, add, edit, and deactivate/reactivate branches, with no way to permanently
+    delete one, and with duplicate names rejected?</strong>
+    Free-play the table below, or click through a guided scenario. Everything resets when you restart a scenario.
+  </p>
+  <p class="note">Per issue #12's role model: Branch is an admin-managed, open-ended list (same pattern as Department, issue #14 — not built here, but this screen's shape is meant to generalize to it).</p>
+</header>
+
+<main>
+
+  <section>
+    <h2>Current state</h2>
+    <div class="state-grid">
+      <div class="state-field"><div class="k">Total branches</div><div class="v" id="f-total">—</div></div>
+      <div class="state-field"><div class="k">Active</div><div class="v" id="f-active">—</div></div>
+      <div class="state-field"><div class="k">Inactive</div><div class="v" id="f-inactive">—</div></div>
+      <div class="state-field"><div class="k">Modal</div><div class="v" id="f-modal">—</div></div>
+    </div>
+    <div class="callout" id="f-callout"></div>
+  </section>
+
+  <section>
+    <h2>The shell (this is what Admin would see)</h2>
+    <div class="shell">
+      <div class="topbar">
+        <span class="brand">Save7OS</span>
+        <span class="crumb">Admin › Branches</span>
+        <span class="spacer"></span>
+        <span class="who">Logged in as Admin</span>
+      </div>
+      <div class="screen" id="shell-screen"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Guided walkthroughs</h2>
+    <div class="tabs" id="tabs"></div>
+    <div class="scenario-desc" id="scenario-desc"></div>
+    <div class="steps" id="scenario-steps"></div>
+    <div style="margin-top:10px;"><button class="reset-link" id="scenario-reset">↺ restart this scenario</button></div>
+  </section>
+
+</main>
+
+<script>
+// =====================================================================
+// Pure module — no DOM references. This is the part that would lift
+// into the real app once the Branch admin screen is validated.
+// =====================================================================
+
+function normalizeName(name) {
+  return name.trim().toLowerCase();
+}
+
+function findDuplicate(branches, name, excludeId) {
+  const norm = normalizeName(name);
+  return branches.find(b => b.id !== excludeId && normalizeName(b.name) === norm);
+}
+
+const initialState = {
+  branches: [
+    { id: 1, name: "UCT", active: true },
+    { id: 2, name: "Stellenbosch", active: true },
+    { id: 3, name: "Wits", active: true },
+    { id: 4, name: "UP", active: true },
+    { id: 5, name: "UJ", active: true },
+    { id: 6, name: "Rhodes", active: false },
+  ],
+  nextId: 7,
+  modal: null, // { mode: 'add' | 'edit', id, draftName, error }
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "OPEN_ADD_MODAL":
+      return { ...state, modal: { mode: "add", id: null, draftName: "", error: null } };
+
+    case "OPEN_EDIT_MODAL": {
+      const branch = state.branches.find(b => b.id === action.id);
+      if (!branch) return state;
+      return { ...state, modal: { mode: "edit", id: branch.id, draftName: branch.name, error: null } };
+    }
+
+    case "CLOSE_MODAL":
+      return { ...state, modal: null };
+
+    case "SET_DRAFT_NAME":
+      if (!state.modal) return state;
+      return { ...state, modal: { ...state.modal, draftName: action.name, error: null } };
+
+    case "SUBMIT_MODAL": {
+      if (!state.modal) return state;
+      const name = state.modal.draftName.trim();
+      if (!name) {
+        return { ...state, modal: { ...state.modal, error: "Branch name is required." } };
+      }
+      const dup = findDuplicate(state.branches, name, state.modal.mode === "edit" ? state.modal.id : null);
+      if (dup) {
+        return { ...state, modal: { ...state.modal, error: `"${dup.name}" already exists — branch names must be unique.` } };
+      }
+      if (state.modal.mode === "add") {
+        const newBranch = { id: state.nextId, name, active: true };
+        return { ...state, branches: [...state.branches, newBranch], nextId: state.nextId + 1, modal: null };
+      }
+      // edit
+      return {
+        ...state,
+        branches: state.branches.map(b => b.id === state.modal.id ? { ...b, name } : b),
+        modal: null,
+      };
+    }
+
+    case "TOGGLE_ACTIVE":
+      return {
+        ...state,
+        branches: state.branches.map(b => b.id === action.id ? { ...b, active: !b.active } : b),
+      };
+
+    default:
+      return state;
+  }
+}
+// =====================================================================
+// End pure module.
+// =====================================================================
+
+let state = initialState;
+let callout = "";
+
+function dispatch(action) {
+  state = reducer(state, action);
+  callout = describeTransition(action, state);
+  render();
+}
+
+function describeTransition(action, next) {
+  if (action.type === "OPEN_ADD_MODAL") return "Opened the Add branch modal.";
+  if (action.type === "OPEN_EDIT_MODAL") return `Opened the Edit modal for "${next.modal.draftName}".`;
+  if (action.type === "CLOSE_MODAL") return "Closed the modal without saving.";
+  if (action.type === "SET_DRAFT_NAME") return `Typed "${action.name}" into the name field.`;
+  if (action.type === "SUBMIT_MODAL") {
+    if (next.modal && next.modal.error) return `Blocked: ${next.modal.error}`;
+    if (!next.modal) return "Saved — modal closed.";
+  }
+  if (action.type === "TOGGLE_ACTIVE") {
+    const b = next.branches.find(b => b.id === action.id);
+    return b.active ? `Reactivated "${b.name}".` : `Deactivated "${b.name}" — hidden from pickers, row kept (no delete).`;
+  }
+  return "";
+}
+
+// ---- rendering (the throwaway part) ----
+
+function render() {
+  const active = state.branches.filter(b => b.active).length;
+  const inactive = state.branches.length - active;
+  document.getElementById("f-total").textContent = state.branches.length;
+  document.getElementById("f-active").textContent = active;
+  document.getElementById("f-inactive").textContent = inactive;
+  document.getElementById("f-modal").textContent = state.modal ? (state.modal.mode === "add" ? "Add branch (open)" : "Edit branch (open)") : "closed";
+  document.getElementById("f-callout").textContent = callout;
+
+  renderScreen();
+  renderScenario();
+}
+
+function renderScreen() {
+  const screen = document.getElementById("shell-screen");
+  const rows = state.branches.map(b => `
+    <tr class="${b.active ? "" : "inactive"}">
+      <td class="name">${b.name}</td>
+      <td><span class="badge ${b.active ? "active" : "inactive"}">${b.active ? "Active" : "Inactive"}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="action small" data-edit="${b.id}">Edit</button>
+          <button class="action small danger" data-toggle="${b.id}">${b.active ? "Deactivate" : "Reactivate"}</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+  screen.innerHTML = `
+    <div class="screen-head">
+      <div>
+        <h3>Branches</h3>
+        <p class="sub">Admin-managed list. Deactivating a branch hides it from pickers elsewhere but never deletes its row.</p>
+      </div>
+      <button class="action primary" data-openadd>+ Add branch</button>
+    </div>
+    <table class="branch-table">
+      <thead><tr><th>Name</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="generalize-note">This list/add/edit/deactivate shape is meant to generalize to Department management (issue #14) — not built in this prototype.</div>
+    ${state.modal ? renderModal(state.modal) : ""}
+  `;
+}
+
+function renderModal(modal) {
+  const title = modal.mode === "add" ? "Add branch" : "Edit branch";
+  return `
+    <div class="modal-overlay" data-modaloverlay>
+      <div class="modal-box">
+        <h3>${title}</h3>
+        <p class="hint">${modal.mode === "add" ? "New branches start active." : "Renaming does not affect active/inactive status."}</p>
+        <label for="draft-name">Branch name</label>
+        <input type="text" id="draft-name" class="${modal.error ? "invalid" : ""}" value="${modal.draftName.replace(/"/g, "&quot;")}" data-draftinput autocomplete="off">
+        <div class="modal-error">${modal.error || ""}</div>
+        <div class="modal-actions">
+          <button class="action" data-closemodal>Cancel</button>
+          <button class="action primary" data-submitmodal>Save</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---- event wiring (delegated, since the screen re-renders) ----
+document.body.addEventListener("click", (e) => {
+  if (e.target.closest("[data-openadd]")) { dispatch({ type: "OPEN_ADD_MODAL" }); afterScenarioClick(); return; }
+
+  const editBtn = e.target.closest("[data-edit]");
+  if (editBtn) { dispatch({ type: "OPEN_EDIT_MODAL", id: Number(editBtn.dataset.edit) }); afterScenarioClick(); return; }
+
+  const toggleBtn = e.target.closest("[data-toggle]");
+  if (toggleBtn) { dispatch({ type: "TOGGLE_ACTIVE", id: Number(toggleBtn.dataset.toggle) }); afterScenarioClick(); return; }
+
+  if (e.target.closest("[data-closemodal]")) { dispatch({ type: "CLOSE_MODAL" }); afterScenarioClick(); return; }
+  if (e.target.closest("[data-submitmodal]")) { dispatch({ type: "SUBMIT_MODAL" }); afterScenarioClick(); return; }
+
+  // clicking the dim overlay itself (not the box) also cancels, like a real modal
+  if (e.target.matches("[data-modaloverlay]")) { dispatch({ type: "CLOSE_MODAL" }); afterScenarioClick(); return; }
+});
+
+document.body.addEventListener("input", (e) => {
+  if (e.target.matches("[data-draftinput]")) {
+    dispatch({ type: "SET_DRAFT_NAME", name: e.target.value });
+  }
+});
+
+// =====================================================================
+// Guided walkthroughs
+// =====================================================================
+const SCENARIOS = [
+  {
+    key: "add-happy-path",
+    label: "Add a branch",
+    description: "The happy path: Admin opens the Add branch modal, types a new name, and saves. Watch the row appear, active by default.",
+    steps: [
+      { label: "Click + Add branch", action: { type: "OPEN_ADD_MODAL" } },
+      { label: "Type \"NWU\"", action: { type: "SET_DRAFT_NAME", name: "NWU" } },
+      { label: "Click Save", action: { type: "SUBMIT_MODAL" } },
+    ],
+  },
+  {
+    key: "duplicate-add-blocked",
+    label: "Duplicate name rejected (add)",
+    description: "Names are unique case-insensitively. Try to add a branch called \"uct\" — it collides with the existing \"UCT\" even though the case differs.",
+    steps: [
+      { label: "Click + Add branch", action: { type: "OPEN_ADD_MODAL" } },
+      { label: "Type \"uct\"", action: { type: "SET_DRAFT_NAME", name: "uct" } },
+      { label: "Click Save — should be blocked", action: { type: "SUBMIT_MODAL" } },
+    ],
+  },
+  {
+    key: "empty-name-blocked",
+    label: "Empty name rejected",
+    description: "The Add modal opens with a blank name. Try to save without typing anything — it shouldn't be allowed.",
+    steps: [
+      { label: "Click + Add branch", action: { type: "OPEN_ADD_MODAL" } },
+      { label: "Click Save with a blank name — should be blocked", action: { type: "SUBMIT_MODAL" } },
+    ],
+  },
+  {
+    key: "rename-collision",
+    label: "Rename collision (edit)",
+    description: "Edit Wits and try to rename it to \"up\" — that collides with the existing UP branch, so the save should be blocked and Wits should keep its original name.",
+    steps: [
+      { label: "Click Edit on Wits", action: { type: "OPEN_EDIT_MODAL", id: 3 } },
+      { label: "Change name to \"up\"", action: { type: "SET_DRAFT_NAME", name: "up" } },
+      { label: "Click Save — should be blocked", action: { type: "SUBMIT_MODAL" } },
+    ],
+  },
+  {
+    key: "deactivate-reactivate",
+    label: "Deactivate and reactivate — no delete",
+    description: "Deactivate UJ. Its row stays in the table (struck through, badged Inactive) — there is no delete button anywhere. Then reactivate it and confirm it's back to normal.",
+    steps: [
+      { label: "Deactivate UJ", action: { type: "TOGGLE_ACTIVE", id: 5 } },
+      { label: "Reactivate UJ", action: { type: "TOGGLE_ACTIVE", id: 5 } },
+    ],
+  },
+];
+
+let activeScenario = 0;
+let scenarioStep = 0; // number of steps already executed
+
+function startScenario(index) {
+  activeScenario = index;
+  scenarioStep = 0;
+  state = initialState;
+  callout = "Scenario reset. Press each step in order.";
+  render();
+}
+
+function afterScenarioClick() {
+  // no-op hook point; scenario progress is advanced explicitly by scenario step buttons,
+  // this exists so free-play clicks don't accidentally advance a scenario.
+}
+
+function renderScenario() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = SCENARIOS.map((s, i) =>
+    `<button class="tab ${i === activeScenario ? "active" : ""}" data-tab="${i}">${s.label}</button>`
+  ).join("");
+  tabs.querySelectorAll("[data-tab]").forEach(t => {
+    t.onclick = () => startScenario(Number(t.dataset.tab));
+  });
+
+  const scenario = SCENARIOS[activeScenario];
+  document.getElementById("scenario-desc").textContent = scenario.description;
+
+  const stepsEl = document.getElementById("scenario-steps");
+  stepsEl.innerHTML = "";
+  scenario.steps.forEach((step, i) => {
+    const div = document.createElement("div");
+    div.className = "step" + (i < scenarioStep ? " done" : "");
+    div.innerHTML = `<span class="n">${i + 1}</span><span>${step.label}</span>`;
+    const btn = document.createElement("button");
+    btn.className = "action";
+    btn.textContent = i < scenarioStep ? "done" : "run step";
+    btn.disabled = i !== scenarioStep;
+    btn.onclick = () => {
+      dispatch(step.action);
+      scenarioStep = i + 1;
+      render();
+    };
+    div.appendChild(btn);
+    stepsEl.appendChild(div);
+  });
+
+  document.getElementById("scenario-reset").onclick = () => startScenario(activeScenario);
+}
+
+// init
+startScenario(0);
+</script>
+
+</body>
+</html>
