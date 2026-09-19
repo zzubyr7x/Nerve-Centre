@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE — the dashboard constitution (issue #55)</title>
+<!--
+  Four radically different constitutions for the personal Dashboard, switchable via ?variant=
+  and the floating bottom bar, crossed with a seat switcher. Nerve Centre #55, for #35 Q1.
+  Throwaway. Pink marks a question left open, not an answer.
+-->
+<style>
+  :root {
+    --pink:#ed186b; --teal:#00b9b5;
+    --ink:#141414; --paper:#faf9f7; --line:#e2ddd8; --muted:#6b6660;
+    --warn:#b8860b; --late:#c0392b;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+         background:var(--paper); color:var(--ink); line-height:1.45; padding-bottom:96px; }
+  .banner { background:#2a2a2a; color:#fff; text-align:center; padding:6px; font-size:12px;
+            font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 20px; }
+  header.intro { padding:26px 0 8px; }
+  header.intro h1 { font-size:21px; margin:0 0 6px; font-weight:800; }
+  header.intro h1 .seven { color:var(--pink); }
+  header.intro p { color:var(--muted); margin:0 0 4px; font-size:14px; max-width:78ch; }
+
+  .legend { border:1px dashed var(--pink); border-radius:9px; padding:14px 16px; margin:18px 0 6px; background:#fff; }
+  .legend h3 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--pink); }
+  .legend ol { margin:0; padding-left:20px; font-size:13px; }
+  .legend li { margin-bottom:5px; }
+  .legend .settled { border-top:1px solid var(--line); margin-top:11px; padding-top:9px; font-size:12.5px; color:var(--muted); }
+  .legend .settled b { color:var(--ink); }
+
+  .seatbar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:16px 0 10px; }
+  .seatbar .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-right:6px; font-weight:700; }
+  .seatbar button { font:inherit; font-size:13px; padding:6px 11px; border-radius:999px;
+                    border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--ink); }
+  .seatbar button[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  /* --- the shell, so the dashboard is judged inside real chrome (from #3) --- */
+  .shell { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; }
+  .topbar { display:flex; align-items:center; gap:4px; flex-wrap:wrap; background:#fff;
+            border-bottom:1px solid var(--line); padding:9px 12px; }
+  .topbar .brand { font-weight:800; font-size:15px; margin-right:10px; }
+  .topbar .brand .seven { color:var(--pink); }
+  .topbar .navlink { font:inherit; font-size:12.5px; padding:5px 10px; border-radius:6px;
+                     border:1px solid transparent; background:transparent; color:var(--muted); cursor:default; }
+  .topbar .navlink.active { background:var(--pink); color:#fff; }
+  .topbar .who { margin-left:auto; font-size:12px; color:var(--muted); }
+  .stage { padding:22px; background:var(--paper); min-height:440px; }
+
+  /* --- shared row furniture --- */
+  .badge { flex:none; font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:700;
+           padding:3px 7px; border-radius:4px; white-space:nowrap; }
+  .b-raised  { background:#fdecf3; color:#b8145a; }
+  .b-standing{ background:#f3efe9; color:#7a6a52; }
+  .b-work    { background:#e6f6f5; color:#00807d; }
+  .hatflag { font-size:10.5px; color:var(--muted); border:1px solid var(--line); padding:1px 5px;
+             border-radius:4px; white-space:nowrap; }
+  .due { font-size:12px; color:var(--warn); font-weight:600; white-space:nowrap; }
+  .due.late { color:var(--late); }
+  .act { flex:none; font:inherit; font-size:12px; padding:5px 10px; border-radius:6px;
+         border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .act:hover { background:#f7f4f0; }
+  .empty { font-size:13px; color:var(--muted); font-style:italic; padding:10px 2px; }
+  .chip { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:#fff; }
+  .chip.lead { border-color:var(--pink); color:var(--pink); }
+
+  .qmark { display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px;
+           border-radius:50%; background:var(--pink); color:#fff; font-size:10px; font-weight:800;
+           margin-left:7px; vertical-align:middle; cursor:help; flex:none; }
+  .qnote { border-left:3px solid var(--pink); background:#fff; padding:8px 11px; margin:10px 0;
+           font-size:12.5px; color:#8a1150; border-radius:0 6px 6px 0; }
+
+  /* --- A: fixed regions in fixed order --- */
+  .vA { max-width:760px; }
+  .vA .region { margin-bottom:28px; }
+  .vA .rh { display:flex; align-items:baseline; gap:9px; border-bottom:2px solid var(--ink);
+            padding-bottom:5px; margin-bottom:10px; }
+  .vA .rh .n { font-size:11px; font-weight:800; color:var(--pink); }
+  .vA .rh h2 { font-size:12px; text-transform:uppercase; letter-spacing:.07em; margin:0; font-weight:800; }
+  .vA .rh .c { margin-left:auto; font-size:12px; color:var(--muted); }
+  .vA li { display:flex; gap:10px; align-items:flex-start; padding:10px 2px; border-bottom:1px solid #f0ece7; }
+  .vA ul { list-style:none; margin:0; padding:0; }
+  .vA li:last-child { border-bottom:none; }
+  .vA .body { flex:1; min-width:0; }
+  .vA .t { display:block; font-size:14px; font-weight:600; }
+  .vA .m { display:block; font-size:12.5px; color:var(--muted); }
+
+  /* --- B: the queue is the page --- */
+  .vB .qhead { display:flex; align-items:baseline; gap:14px; margin-bottom:4px; }
+  .vB .qhead h2 { font-size:19px; margin:0; font-weight:800; }
+  .vB .qhead .sub { font-size:13px; color:var(--muted); }
+  .vB .qhead .sub b.late { color:var(--late); }
+  .vB ul { list-style:none; margin:14px 0 0; padding:0; border-top:1px solid var(--line); }
+  .vB li { display:flex; gap:12px; align-items:center; padding:13px 4px; border-bottom:1px solid var(--line); }
+  .vB .tick { flex:none; width:19px; height:19px; border-radius:5px; border:1.5px solid var(--muted);
+              background:#fff; cursor:pointer; }
+  .vB .tick.none { border-style:dashed; opacity:.45; cursor:not-allowed; }
+  .vB .body { flex:1; min-width:0; }
+  .vB .t { display:block; font-size:14.5px; font-weight:600; }
+  .vB .m { display:block; font-size:12.5px; color:var(--muted); }
+  .vB .strip { margin-top:22px; border-top:2px solid var(--ink); padding-top:12px;
+               display:flex; gap:16px; flex-wrap:wrap; align-items:center; font-size:12.5px; }
+  .vB .strip .ticker { flex:1; min-width:260px; color:var(--muted); }
+  .vB .strip .ticker b { color:var(--ink); }
+
+  /* --- C: hub-owned sections --- */
+  .vC .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .vC .panel { border:1px solid var(--line); border-radius:9px; background:#fff; padding:13px 15px; }
+  .vC .panel.orphan { border-color:var(--pink); border-style:dashed; }
+  .vC .ph { display:flex; align-items:baseline; gap:8px; margin-bottom:9px; }
+  .vC .ph h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; margin:0; font-weight:800; }
+  .vC .ph .cnt { margin-left:auto; font-size:11px; font-weight:800; color:#fff; background:var(--pink);
+                 border-radius:999px; padding:1px 8px; }
+  .vC .ph .cnt.zero { background:#d8d3cd; color:#5d5850; }
+  .vC ul { list-style:none; margin:0; padding:0; }
+  .vC li { padding:8px 0; border-bottom:1px solid #f4f1ec; font-size:13px; }
+  .vC li:last-child { border-bottom:none; }
+  .vC .m { font-size:12px; color:var(--muted); }
+
+  /* --- D: cards claimed by a seat --- */
+  .vD .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(285px,1fr)); gap:13px; align-items:start; }
+  .vD .card { border:1px solid var(--line); border-radius:9px; background:#fff; padding:12px 14px; }
+  .vD .claim { font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:800;
+               color:var(--muted); border-bottom:1px solid #f0ece7; padding-bottom:6px; margin-bottom:8px;
+               display:flex; gap:6px; align-items:center; }
+  .vD .claim .dot { width:7px; height:7px; border-radius:50%; background:var(--teal); flex:none; }
+  .vD .card h2 { font-size:13.5px; margin:0 0 7px; font-weight:800; }
+  .vD ul { list-style:none; margin:0; padding:0; }
+  .vD li { padding:6px 0; border-bottom:1px solid #f4f1ec; font-size:13px; }
+  .vD li:last-child { border-bottom:none; }
+  .vD .m { font-size:12px; color:var(--muted); }
+
+  /* --- floating variant bar --- */
+  .varbar { position:fixed; bottom:0; left:0; right:0; background:#2a2a2a; color:#fff;
+            padding:10px 16px; display:flex; gap:12px; align-items:center; justify-content:center;
+            z-index:50; box-shadow:0 -3px 14px rgba(0,0,0,.18); }
+  .varbar button.arrow { font:inherit; font-size:15px; line-height:1; padding:7px 13px; border-radius:7px;
+                         border:1px solid #555; background:#1c1c1c; color:#fff; cursor:pointer; }
+  .varbar button.arrow:hover { background:var(--pink); border-color:var(--pink); }
+  .varbar .cur { font-size:13px; font-weight:700; min-width:330px; text-align:center; }
+  .varbar .cur .k { color:var(--pink); }
+  .varbar .hint { position:absolute; right:16px; font-size:11px; opacity:.5; }
+
+  @media (max-width:820px) {
+    .vC .grid { grid-template-columns:1fr; }
+    .varbar .cur { min-width:0; font-size:12px; }
+    .varbar .hint { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">Prototype — four constitutions to react to, not a design</div>
+
+<div class="wrap">
+  <header class="intro">
+    <h1>The dashboard constitution — Save<span class="seven">7</span> OS</h1>
+    <p>#35 settled that the Dashboard is <b>per seat</b>. That makes a frame mandatory: it is the only thing
+    standing between one surface rendered twelve ways and twelve pages that drift. Four frames below, each a
+    different answer to <b>what every dashboard carries, in what order, and what a dashboard is allowed to be</b>.
+    Flip with the bar at the bottom (or ← →). Switch seats to see whether a frame survives contact with all of them.</p>
+  </header>
+
+  <div class="legend">
+    <h3>Pink marks a question this prototype refuses to answer</h3>
+    <ol>
+      <li><b>Announcements</b> — who writes one, who sees it, how long it lives. Nothing in the map has claimed this surface, and #35 just put it on the most-seen screen in the product.</li>
+      <li><b>MOU status and quick-links into hubs</b> — both proposed, neither settled. The case against: a dashboard that becomes a noticeboard stops being read. Frame A shows them, frame B refuses them.</li>
+      <li><b>Work with no hub</b> — #30 has not placed Projects in a hub yet, so assigned project work has no section in frame C. That is a finding about frame C, not a gap in the data.</li>
+      <li><b>Per-person preferences</b> — card order, collapsed sections. #35 Q7 asks whether this map decides that at all.</li>
+      <li><b>A trio's shared duty</b> — see the note under "already settled": a draft answer exists but is not yet on <code>main</code>.</li>
+    </ol>
+    <div class="settled"><b>Already settled and rendered as given:</b> everyone has one and it is the landing page;
+      it is per seat; it carries action points (overdue in red), assigned work, who you are, what you must act on
+      as a seat-holder, and Exco announcements; action points are ticked done from here by their owner;
+      <b>authority is not obligation</b> — a duty sits with the lowest level that can act on it;
+      <b>one merged queue badged by the hat it arrives through</b>; the card set is not written up front;
+      <b>Super Admin generates nothing</b>.
+      <br><br><b>In flight, not settled:</b> an uncommitted <code>CONTEXT.md</code> draft in the working tree mints
+      <b>Duty</b> for the thing owed, and splits it into <b>raised</b> (stored, ticked) and <b>standing</b>
+      (computed from a state, aggregates, nothing to tick — which would dissolve the trio question, since any one
+      of the three acting clears the state for all three). This prototype uses that vocabulary and marks rows
+      accordingly, because it is the only candidate on the table — but it is not on <code>main</code> and #55 does
+      not settle it.</div>
+  </div>
+
+  <div class="seatbar">
+    <span class="lbl">Signed in as</span>
+    <button data-seat="vol" aria-pressed="true">Volunteer</button>
+    <button data-seat="bm" aria-pressed="false">Branch Manager</button>
+    <button data-seat="fm" aria-pressed="false">Finance Manager</button>
+    <button data-seat="gl" aria-pressed="false">General Liaison</button>
+    <button data-seat="exco" aria-pressed="false">Exco (CEO)</button>
+    <button data-seat="multi" aria-pressed="false">Four hats at once</button>
+  </div>
+
+  <div class="shell">
+    <div class="topbar" id="topbar"></div>
+    <div class="stage" id="stage"></div>
+  </div>
+</div>
+
+<div class="varbar">
+  <button class="arrow" id="prev" aria-label="Previous frame">←</button>
+  <span class="cur" id="cur"></span>
+  <button class="arrow" id="next" aria-label="Next frame">→</button>
+  <span class="hint">← → to cycle</span>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ data */
+
+const HUBS = { okrs:"OKRs", finance:"Finance", compliance:"Compliance", media:"Media",
+               ops:"Operations", bmh:"Branch Managers", depts:"Departments" };
+
+const SEATS = {
+  vol: {
+    name:"Thandi Mokoena", who:"Volunteer · UCT",
+    hubs:["okrs"],
+    chips:["UCT branch","Media Department",{t:"Orgamites UCT — team",lead:false}]
+  },
+  bm: {
+    name:"Sipho Ndlovu", who:"Branch Manager · UCT",
+    hubs:["okrs","finance","media","ops","bmh"],
+    chips:["UCT branch — Branch Manager","Research Department"]
+  },
+  fm: {
+    name:"Aisha Patel", who:"Finance Manager · Stellenbosch",
+    hubs:["okrs","finance","ops","bmh"],
+    chips:["Stellenbosch — Finance Manager"]
+  },
+  gl: {
+    name:"Kagiso Mahlangu", who:"General Liaison",
+    hubs:["okrs","finance","compliance","media","ops","bmh","depts"],
+    chips:["General Liaison — organisation-wide","UP branch","Super Admin"]
+  },
+  exco: {
+    name:"Lerato Dube", who:"National Exco · CEO",
+    hubs:["okrs","finance","compliance","media","ops","bmh","depts"],
+    chips:["National Exco — CEO","Wits branch","Super Admin"]
+  },
+  multi: {
+    name:"Naledi Khumalo", who:"Finance Manager · Wits",
+    hubs:["okrs","finance","media","ops","bmh"],
+    chips:["Wits — Finance Manager","Media Department",
+           {t:"Orgamites Wits — Project Lead",lead:true},
+           "Red Cross Drive — team","Dialysis Outreach — team"]
+  }
+};
+
+/* kind: raised | standing | work
+   hat:  the seat the duty arrives through (null = arrives as yourself)
+   hub:  which hub it originates from (null = no hub owns it — see frame C) */
+const DUTIES = {
+  vol: [
+    {kind:"raised", hub:"compliance", hat:null, t:"Send through your availability for the school visit",
+     m:"Action point · UCT branch meeting, 12 Sep", due:"Overdue", late:true, act:"Tick done"},
+    {kind:"work", hub:null, hat:null, t:"Design the Orgamites assembly poster",
+     m:"Orgamites UCT · Design stage", due:"Due Fri", act:"Tick done", q:"orphan"},
+    {kind:"work", hub:null, hat:null, t:"Log your hours — packing session, 14 Sep",
+     m:"Orgamites UCT", due:"Due Sun", act:"Log", q:"orphan"},
+    {kind:"raised", hub:"finance", hat:null, t:"Upload proof of payment — printing, R240",
+     m:"Finance are waiting on this", due:"", act:"Upload"}
+  ],
+  bm: [
+    {kind:"standing", hub:"bmh", hat:"Branch Manager", t:"3 volunteers awaiting acceptance",
+     m:"UCT · shared standing duty with your Ops and Finance Managers", due:"Oldest 9 days", late:true, act:"Open", q:"trio"},
+    {kind:"standing", hub:"bmh", hat:"Branch Manager", t:"2 volunteers up for dormancy review",
+     m:"UCT · no sign-in for 60 days", due:"", act:"Open", q:"trio"},
+    {kind:"raised", hub:"bmh", hat:"Branch Manager", t:"Draft the Project Lead MOU for Thandi Mokoena",
+     m:"Requested 8 Sep · routes to Exco via the General Liaison", due:"", act:"Start"},
+    {kind:"raised", hub:"compliance", hat:null, t:"Report UCT headcount to the COO",
+     m:"Action point · national managers' meeting, 5 Sep", due:"Due Mon", act:"Tick done"},
+    {kind:"work", hub:null, hat:null, t:"Book the venue for the UCT open day",
+     m:"Red Cross Drive · Planning stage", due:"Due 24 Sep", act:"Tick done", q:"orphan"},
+    {kind:"standing", hub:"okrs", hat:"Branch Manager", t:"UCT has no objective on the Nimble operations pillar",
+     m:"Every other branch has one", due:"", act:"Open"}
+  ],
+  fm: [
+    {kind:"standing", hub:"finance", hat:"Finance Manager", t:"7 claims awaiting verification",
+     m:"Stellenbosch · oldest 11 days", due:"Oldest 11 days", late:true, act:"Open"},
+    {kind:"standing", hub:"finance", hat:"Finance Manager", t:"2 invoices with no proof of payment",
+     m:"Stellenbosch", due:"", act:"Open"},
+    {kind:"standing", hub:"bmh", hat:"Finance Manager", t:"3 volunteers awaiting acceptance",
+     m:"Stellenbosch · shared standing duty with your Branch and Ops Managers", due:"Oldest 4 days", act:"Open", q:"trio"},
+    {kind:"raised", hub:"finance", hat:"Finance Manager", t:"Send September branch spend to the CFO",
+     m:"Action point · finance check-in, 2 Sep", due:"Due 30 Sep", act:"Tick done"},
+    {kind:"standing", hub:"finance", hat:"Finance Manager", t:"Stellenbosch is at 94% of its printing budget",
+     m:"", due:"", act:"Open"}
+  ],
+  gl: [
+    {kind:"standing", hub:"compliance", hat:"General Liaison", t:"Log the minutes for Exco, 17 Sep",
+     m:"Meeting recorded, minutes not written", due:"2 days ago", late:true, act:"Open"},
+    {kind:"standing", hub:"bmh", hat:"General Liaison", t:"4 Project Lead MOUs in routing",
+     m:"Awaiting your pass-through to Exco", due:"Oldest 6 days", act:"Open"},
+    {kind:"standing", hub:"depts", hat:"General Liaison", t:"2 Exco-discussion requests pending",
+     m:"Media and Tech Department Heads", due:"", act:"Open"},
+    {kind:"standing", hub:"bmh", hat:"General Liaison", t:"1 branchless volunteer awaiting acceptance",
+     m:"No Branch Management to hold it — it falls to you", due:"", act:"Open"},
+    {kind:"raised", hub:"compliance", hat:null, t:"Circulate the Q3 governance calendar",
+     m:"Action point · Exco, 10 Sep", due:"Overdue", late:true, act:"Tick done"}
+  ],
+  exco: [
+    {kind:"standing", hub:"bmh", hat:"National Exco", t:"5 Project Lead MOUs awaiting your sign-off",
+     m:"Routed by the General Liaison", due:"Oldest 8 days", late:true, act:"Open"},
+    {kind:"standing", hub:"depts", hat:"National Exco", t:"Tech and Education Departments have no Head",
+     m:"Seats unfilled since the restructure", due:"", act:"Open"},
+    {kind:"standing", hub:"depts", hat:"National Exco", t:"Research Department Head's interval update is overdue",
+     m:"Last update 6 weeks ago", due:"", late:true, act:"Open"},
+    {kind:"raised", hub:"compliance", hat:null, t:"Draft the Resolution on the Advisory board's default state",
+     m:"Action point · Exco, 17 Sep", due:"Due Thu", act:"Tick done"},
+    {kind:"standing", hub:"okrs", hat:"National Exco", t:"No season has been declared since March",
+     m:"Mission and strategy is 6 months old", due:"", act:"Open"}
+  ],
+  multi: [
+    {kind:"standing", hub:"finance", hat:"Finance Manager", t:"9 claims awaiting verification",
+     m:"Wits · oldest 14 days", due:"Oldest 14 days", late:true, act:"Open"},
+    {kind:"standing", hub:"bmh", hat:"Finance Manager", t:"3 volunteers awaiting acceptance",
+     m:"Wits · shared standing duty with your Branch and Ops Managers", due:"Oldest 5 days", act:"Open", q:"trio"},
+    {kind:"standing", hub:null, hat:"Project Lead", t:"2 volunteers have asked to join Orgamites Wits",
+     m:"Waiting on you since 14 Sep", due:"", act:"Open", q:"orphan"},
+    {kind:"standing", hub:null, hat:"Project Lead", t:"Milestone “200 packs assembled” has no target date",
+     m:"Orgamites Wits", due:"", act:"Open", q:"orphan"},
+    {kind:"work", hub:null, hat:null, t:"Shoot the handover photos",
+     m:"Red Cross Drive · Delivery stage", due:"Due Wed", act:"Tick done", q:"orphan"},
+    {kind:"work", hub:null, hat:null, t:"Write 300 words for the newsletter",
+     m:"Dialysis Outreach · Comms", due:"Overdue", late:true, act:"Tick done", q:"orphan"},
+    {kind:"raised", hub:"media", hat:"Media Department", t:"Re-cut the Orgamites reel to 30s",
+     m:"Assigned by the Media Department Head", due:"Due Fri", act:"Tick done"},
+    {kind:"raised", hub:"compliance", hat:null, t:"Send your availability for the Wits open day",
+     m:"Action point · Wits branch meeting, 11 Sep", due:"Overdue", late:true, act:"Tick done"},
+    {kind:"standing", hub:"finance", hat:"Finance Manager", t:"Wits is at 88% of its transport budget",
+     m:"", due:"", act:"Open"}
+  ]
+};
+
+const ANNOUNCEMENTS = [
+  {t:"National conference is confirmed for 14–16 November, Durban", m:"Posted by the CEO · 16 Sep"},
+  {t:"New Section 18A process — read before submitting any claim", m:"Posted by the CFO · 9 Sep"}
+];
+
+const MOUS = {
+  vol:   {t:"Your Project Lead MOU is awaiting Exco sign-off", m:"Sent to the General Liaison, 8 Sep"},
+  multi: {t:"Your Project Lead MOU was signed off", m:"Exco, 3 Sep"},
+  bm:    null, fm:null, gl:null, exco:null
+};
+
+const QNOTES = {
+  orphan:"#30 has not placed Projects in a hub yet, so this has no section to sit in.",
+  trio:"Held jointly by Branch Management. An uncommitted CONTEXT.md draft calls this a standing duty that aggregates and clears for all three when any one acts — not settled."
+};
+
+/* ------------------------------------------------------------------ state */
+
+const VARIANTS = [
+  {k:"A", name:"Fixed regions in fixed order", render:renderA},
+  {k:"B", name:"The queue is the page",        render:renderB},
+  {k:"C", name:"Hub-owned sections",           render:renderC},
+  {k:"D", name:"Cards claimed by a seat",      render:renderD}
+];
+
+let seat = "vol";
+let vi = Math.max(0, VARIANTS.findIndex(v => v.k === (new URLSearchParams(location.search).get("variant") || "A")));
+
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const q = id => id ? `<span class="qmark" title="${esc(QNOTES[id])}">?</span>` : "";
+const badge = k => k === "raised"  ? '<span class="badge b-raised">raised</span>'
+                 : k === "standing"? '<span class="badge b-standing">standing</span>'
+                 :                   '<span class="badge b-work">project work</span>';
+const dueHtml = d => d.due ? `<span class="due${d.late ? " late" : ""}">${esc(d.due)}</span>` : "";
+const chipHtml = c => typeof c === "string"
+  ? `<span class="chip">${esc(c)}</span>`
+  : `<span class="chip${c.lead ? " lead" : ""}">${esc(c.t)}</span>`;
+
+/* ------------------------------------------------------- A: fixed regions */
+/* Same named regions, same order, on every dashboard. Empty ones hidden.
+   Maximum predictability; the cost is rigidity and dead space. */
+
+function renderA(s, duties) {
+  const owed = duties.filter(d => d.kind !== "work");
+  const work = duties.filter(d => d.kind === "work");
+  const mou  = MOUS[seat];
+
+  const region = (n, title, count, inner) => !inner ? "" : `
+    <section class="region">
+      <div class="rh"><span class="n">${n}</span><h2>${title}</h2>
+        ${count !== null ? `<span class="c">${count}</span>` : ""}</div>
+      ${inner}
+    </section>`;
+
+  const rows = list => !list.length ? "" : "<ul>" + list.map(d => `
+    <li>${badge(d.kind)}
+      <span class="body"><span class="t">${esc(d.t)}${q(d.q)}</span>
+        <span class="m">${esc(d.m)}${d.hat ? ` <span class="hatflag">as ${esc(d.hat)}</span>` : ""}</span></span>
+      ${dueHtml(d)}<button class="act">${esc(d.act)}</button></li>`).join("") + "</ul>";
+
+  return `<div class="vA">
+    ${region(1, "What you owe", `${owed.length} open`, rows(owed))}
+    ${region(2, "Work assigned to you", `${work.length}`, rows(work))}
+    ${region(3, "Announcements", null, `<span class="qmark" title="Who writes one, who sees it, how long it lives — all open.">?</span>
+      <ul>${ANNOUNCEMENTS.map(a => `<li><span class="body"><span class="t">${esc(a.t)}</span>
+        <span class="m">${esc(a.m)}</span></span></li>`).join("")}</ul>`)}
+    ${region(4, "Your MOU", null, mou ? `<span class="qmark" title="MOU status on the dashboard was proposed, never settled.">?</span>
+      <ul><li><span class="body"><span class="t">${esc(mou.t)}</span>
+        <span class="m">${esc(mou.m)}</span></span></li></ul>` : "")}
+    ${region(5, "You in the organisation", null,
+      `<div style="display:flex;flex-wrap:wrap;gap:7px">${s.chips.map(chipHtml).join("")}</div>`)}
+    <div class="qnote"><b>What this frame costs:</b> the order is law, so a Volunteer with nothing assigned
+      gets regions 1, 3 and 5 and two visible gaps. Nothing can ever be promoted above "what you owe", however
+      urgent — which is either the point of a constitution or its failure.</div>
+  </div>`;
+}
+
+/* ------------------------------------------------ B: the queue is the page */
+/* One merged badged list is the whole page. Identity, announcements and
+   anything else are a thin strip underneath. Primary affordance: tick. */
+
+function renderB(s, duties) {
+  const late = duties.filter(d => d.late).length;
+  return `<div class="vB">
+    <div class="qhead"><h2>What is on you</h2>
+      <span class="sub">${duties.length} open${late ? ` · <b class="late">${late} overdue</b>` : ""}</span></div>
+    <div class="sub" style="font-size:12.5px;color:var(--muted)">One list. Badged by the hat it arrives through. Nothing else competes with it.</div>
+    <ul>${duties.map(d => `
+      <li><span class="tick${d.kind === "standing" ? " none" : ""}"
+            title="${d.kind === "standing" ? "Standing duty — computed from a state, nothing to tick" : "Tick done"}"></span>
+        <span class="body"><span class="t">${esc(d.t)}${q(d.q)}</span>
+          <span class="m">${esc(d.m)}</span></span>
+        ${d.hat ? `<span class="hatflag">${esc(d.hat)}</span>` : ""}
+        ${badge(d.kind)}${dueHtml(d)}</li>`).join("")}</ul>
+    <div class="strip">
+      <span class="ticker"><b>Exco:</b> ${esc(ANNOUNCEMENTS[0].t)}
+        <span class="qmark" title="Demoted to one line. Is that enough for the only org-wide broadcast there is?">?</span></span>
+      ${s.chips.map(chipHtml).join("")}
+    </div>
+    <div class="qnote"><b>What this frame costs:</b> it refuses quick-links and MOU status outright — the
+      noticeboard problem solved by fiat. It also flattens "who you are" into furniture, which #35 lists as
+      required content. And with ${duties.length} rows this seat is fine; the frame is untested at fifty.</div>
+  </div>`;
+}
+
+/* ------------------------------------------------- C: hub-owned sections */
+/* Each hub the person can reach contributes a section, in nav order, with a
+   problems count. Makes "what does this hub put in your queue?" structural. */
+
+function renderC(s, duties) {
+  const orphans   = duties.filter(d => !d.hub);
+  const unreached = duties.filter(d => d.hub && !s.hubs.includes(d.hub));
+  const panels = s.hubs.map(h => {
+    const list = duties.filter(d => d.hub === h);
+    return `<div class="panel">
+      <div class="ph"><h2>${esc(HUBS[h])}</h2>
+        <span class="cnt${list.length ? "" : " zero"}">${list.length}</span></div>
+      ${list.length ? "<ul>" + list.map(d => `<li><b>${esc(d.t)}</b>${q(d.q)}
+        <div class="m">${esc(d.m)} ${dueHtml(d)}</div></li>`).join("") + "</ul>"
+        : '<div class="empty">Nothing from this hub.</div>'}
+    </div>`;
+  }).join("");
+
+  return `<div class="vC">
+    <div class="grid">
+      ${orphans.length ? `<div class="panel orphan">
+        <div class="ph"><h2>Belongs to no hub</h2><span class="cnt">${orphans.length}</span></div>
+        <ul>${orphans.map(d => `<li><b>${esc(d.t)}</b>${q(d.q)}
+          <div class="m">${esc(d.m)} ${dueHtml(d)}</div></li>`).join("")}</ul>
+      </div>` : ""}
+      ${unreached.length ? `<div class="panel orphan">
+        <div class="ph"><h2>From a hub you cannot open</h2><span class="cnt">${unreached.length}</span></div>
+        <ul>${unreached.map(d => `<li><b>${esc(d.t)}</b>
+          <span class="qmark" title="Originates in the ${esc(HUBS[d.hub])} Hub, which this seat cannot open — so this frame has no lawful section for it.">?</span>
+          <div class="m">${esc(d.m)} ${dueHtml(d)}</div></li>`).join("")}</ul>
+      </div>` : ""}
+      ${panels}
+      <div class="panel">
+        <div class="ph"><h2>From National Exco</h2><span class="cnt zero">${ANNOUNCEMENTS.length}</span></div>
+        <ul>${ANNOUNCEMENTS.map(a => `<li><b>${esc(a.t)}</b><div class="m">${esc(a.m)}</div></li>`).join("")}</ul>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>You in the organisation</h2></div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">${s.chips.map(chipHtml).join("")}</div>
+      </div>
+    </div>
+    <div class="qnote"><b>What this frame costs:</b> a Volunteer reaches one hub, so their page is one panel and
+      two pink boxes, while Exco gets seven — incomparable pages from the same rule. It breaks the settled
+      <b>one merged queue</b>: the same person's duties are scattered across seven boxes, so "what is on me" has
+      no single answer.<br><br><b>And it has a hole the others do not.</b> An action point raised in a branch
+      meeting belongs to the <b>Compliance</b> Hub, which a Volunteer cannot open — so a frame built out of the
+      hubs you can reach has <i>nowhere lawful</i> to put a Volunteer's own action points. Switch to Volunteer: <b>all four</b>
+      of their duties sit in the two pink boxes, and the one hub they can open is empty. Both pink boxes are the frame admitting
+      it does not work, and the first one (project work with no hub) only disappears once #30 lands.</div>
+  </div>`;
+}
+
+/* ------------------------------------------- D: cards claimed by a seat */
+/* A card declares which seat summons it. The page is the union of the cards
+   your seats pull in. Maximum flexibility, weakest frame. */
+
+function renderD(s, duties) {
+  const groups = {};
+  duties.forEach(d => { const k = d.hat || "You"; (groups[k] = groups[k] || []).push(d); });
+  const cards = Object.entries(groups).map(([claim, list]) => `
+    <div class="card">
+      <div class="claim"><span class="dot"></span>claimed by ${esc(claim)}</div>
+      <h2>${esc(claim === "You" ? "Yours directly" : claim)}</h2>
+      <ul>${list.map(d => `<li><b>${esc(d.t)}</b>${q(d.q)}
+        <div class="m">${esc(d.m)} ${dueHtml(d)}</div></li>`).join("")}</ul>
+    </div>`).join("");
+
+  const mou = MOUS[seat];
+  return `<div class="vD">
+    <div class="grid">
+      ${cards}
+      <div class="card">
+        <div class="claim"><span class="dot"></span>claimed by everyone</div>
+        <h2>Announcements <span class="qmark" title="A card claimed by everyone is just a card. Nothing guarantees it is above the fold.">?</span></h2>
+        <ul>${ANNOUNCEMENTS.map(a => `<li><b>${esc(a.t)}</b><div class="m">${esc(a.m)}</div></li>`).join("")}</ul>
+      </div>
+      ${mou ? `<div class="card">
+        <div class="claim"><span class="dot"></span>claimed by Project Lead</div>
+        <h2>Your MOU <span class="qmark" title="Proposed, never settled.">?</span></h2>
+        <ul><li><b>${esc(mou.t)}</b><div class="m">${esc(mou.m)}</div></li></ul>
+      </div>` : ""}
+      <div class="card">
+        <div class="claim"><span class="dot"></span>claimed by everyone</div>
+        <h2>You in the organisation</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:4px">${s.chips.map(chipHtml).join("")}</div>
+      </div>
+    </div>
+    <div class="qnote"><b>What this frame costs:</b> it is barely a constitution — it guarantees only that a card
+      appears, never where or above what. Adding a seat adds cards with no one deciding what they push down, which
+      is exactly the drift a frame exists to prevent. It is also the only frame that scales to a person with four
+      hats without redesign.</div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+function renderTopbar(s) {
+  const nav = s.hubs.map(h => `<button class="navlink">${esc(HUBS[h])}</button>`).join("");
+  document.getElementById("topbar").innerHTML =
+    `<span class="brand">Save<span class="seven">7</span> OS</span>
+     <button class="navlink active">Dashboard</button>${nav}
+     <span class="who">${esc(SEATS[seat].name)} — ${esc(s.who)}</span>`;
+}
+
+function render() {
+  const s = SEATS[seat], duties = DUTIES[seat], v = VARIANTS[vi];
+  renderTopbar(s);
+  document.getElementById("stage").innerHTML = v.render(s, duties);
+  document.getElementById("cur").innerHTML = `<span class="k">${v.k}</span> — ${esc(v.name)}`;
+  const u = new URL(location); u.searchParams.set("variant", v.k); history.replaceState(null, "", u);
+}
+
+document.querySelectorAll(".seatbar button").forEach(b => b.addEventListener("click", () => {
+  seat = b.dataset.seat;
+  document.querySelectorAll(".seatbar button").forEach(x =>
+    x.setAttribute("aria-pressed", String(x === b)));
+  render();
+}));
+
+const cycle = n => { vi = (vi + n + VARIANTS.length) % VARIANTS.length; render(); };
+document.getElementById("prev").addEventListener("click", () => cycle(-1));
+document.getElementById("next").addEventListener("click", () => cycle(1));
+document.addEventListener("keydown", e => {
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.key === "ArrowLeft")  cycle(-1);
+  if (e.key === "ArrowRight") cycle(1);
+});
+
+render();
+</script>
+</body>
+</html>
