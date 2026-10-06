@@ -1,0 +1,202 @@
+/* ==========================================================================
+   SAVE7 LOOK — the visual vocabulary every prototype on the Nerve Centre map
+   shares. Taken from the KEPSA presentation ("KEPSA Slides - SANS"), which the
+   user gave on 2026-10-07 as the design direction for the OS and all prototypes.
+
+   Colours were sampled from the rendered PDF, not guessed. Typeface is
+   Montserrat (embedded in the deck: Regular, Medium, SemiBold, Bold, italics).
+
+   Use it: paste this file into a prototype's <style> block and put
+   class="save7-look" on <body>. A prototype is inlined rather than linked so it
+   opens by double-click and survives being emailed; this file is the one source
+   the copies are taken from.
+
+   TWO EXTENSIONS beyond what the deck shows, both for small text:
+   --teal-ink and --pink-ink are darker twins of the brand teal and pink. The
+   brand values are fine for titles, fills and shapes (as the deck uses them) but
+   fall below readable contrast as small body text on white.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* brand */
+  --navy: #0C173B;
+  --teal: #00B7B5;
+  --pink: #ED186B;
+  --amber: #FFC550;          /* connectors, pins, third-in-sequence — never a main colour */
+  --ink: #585858;            /* body text */
+
+  /* tints (card borders, fills, blobs) */
+  --teal-border: #E6F7F7;
+  --teal-fill: #F4FBFB;
+  --mint: #F3FBFB;
+  --pink-border: #FCE8F0;
+  --pink-fill: #FFF5F7;
+  --pink-head: #FCDCE8;
+  --amber-fill: #FFF6DD;     /* derived from the amber, for flag callouts */
+
+  /* small-text twins (extension — see header) */
+  --teal-ink: #007F7D;
+  --pink-ink: #C70F58;
+  --amber-ink: #8A5B00;
+
+  --radius: 20px;
+  --radius-sm: 12px;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.save7-look {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+}
+
+/* ---- the two backdrop blobs: pale mint top-right, pale pink bottom-left ---- */
+.save7-look::before,
+.save7-look::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.save7-look::before { top: -22vw; right: -16vw; width: 52vw; height: 52vw; background: var(--mint); }
+.save7-look::after  { bottom: -20vw; left: -12vw; width: 38vw; height: 38vw; background: var(--pink-fill); }
+
+/* ---- the two-circle motif: big teal, smaller pink, overlapping ---- */
+.circles { position: relative; width: 104px; height: 96px; flex: none; }
+.circles::before,
+.circles::after { content: ''; position: absolute; border-radius: 50%; }
+.circles::before { top: 0; right: 0; width: 72px; height: 72px; background: var(--teal); }
+.circles::after  { bottom: 0; left: 6px; width: 44px; height: 44px; background: var(--pink); }
+
+/* ---- type ---- */
+.eyebrow { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: var(--pink-ink); }
+.eyebrow.teal { color: var(--teal-ink); }
+.title { margin: 0; font-weight: 700; color: var(--navy); line-height: 1.15; letter-spacing: -0.01em; }
+.title .dot { color: var(--pink); }
+.title .accent { color: var(--teal); }
+h1.title { font-size: 40px; }
+h2.title { font-size: 26px; }
+h3.title { font-size: 18px; }
+.lede { color: var(--ink); font-size: 15px; max-width: 70ch; }
+.strong { font-weight: 700; color: var(--navy); }
+.muted { color: #8a8a8a; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ---- cards: white, large radius, hairline tinted border; alternate teal/pink ---- */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.card.pink { border-color: var(--pink-border); }
+.card.tint-teal { background: var(--teal-fill); }
+.card.tint-pink { background: var(--pink-fill); }
+.card-label { margin: 0 0 10px; font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ---- number pills ("01", "BARRIER 01") ---- */
+.num {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.num.pink { background: var(--pink); }
+.num.amber { background: var(--amber); color: var(--navy); }
+
+/* ---- buttons: outlined teal pill; pink for the primary ---- */
+.btn {
+  font: 600 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--teal-fill); }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+.btn.primary:hover { background: #d4125d; }
+.btn.quiet { border-color: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--teal-fill); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* ---- status chips: small, pale ---- */
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-border);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+.chip.pink { background: var(--pink-border); color: var(--pink-ink); }
+.chip.amber { background: #FFEFC2; color: var(--amber-ink); }
+.chip.grey { background: #F1F1F3; color: #666; }
+
+/* ---- tabs: pill row, active in pink ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 600 13px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--teal-fill); }
+.tab[aria-selected="true"] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+
+/* ---- form controls ---- */
+input[type="text"], select {
+  font: 500 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+input[type="text"]::placeholder { color: #a5a5a5; }
+
+/* ---- labelled field rows ---- */
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.fields dt { font-weight: 600; font-size: 12px; color: #8a8a8a; align-self: center; }
+.fields dd { margin: 0; color: var(--navy); font-weight: 600; }
+
+/* ---- timeline bar: alternating teal and pink segments, amber pin on the current one ---- */
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.bar > i { flex: 1; background: var(--teal); }
+.bar > i:nth-child(even) { background: var(--pink); }
+.bar > i.todo { opacity: 0.22; }
+
+/* ---- callout: amber, for open questions the user should react to ---- */
+.flag {
+  background: var(--amber-fill);
+  border: 1.5px solid #FFE7A8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #5a4300;
+}
+.flag b { color: var(--amber-ink); }
+
+/* ---- logo ---- */
+.logo { display: block; height: 22px; width: auto; }
