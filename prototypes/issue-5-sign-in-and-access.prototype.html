@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE — Sign-in page and the two ways in (Landing page login/signup flow &amp; doors)</title>
+<style id="save7-look-css">
+/* Inlined from prototypes/save7-look.css so this file opens by double-click and survives being emailed. */
+/* ==========================================================================
+   SAVE7 LOOK — the visual vocabulary every prototype on the Nerve Centre map
+   shares. Taken from the KEPSA presentation ("KEPSA Slides - SANS"), which the
+   user gave on 2026-10-07 as the design direction for the OS and all prototypes.
+
+   Colours were sampled from the rendered PDF, not guessed. Typeface is
+   Montserrat (embedded in the deck: Regular, Medium, SemiBold, Bold, italics).
+
+   Use it: paste this file into a prototype's <style> block and put
+   class="save7-look" on <body>. A prototype is inlined rather than linked so it
+   opens by double-click and survives being emailed; this file is the one source
+   the copies are taken from.
+
+   TWO EXTENSIONS beyond what the deck shows, both for small text:
+   --teal-ink and --pink-ink are darker twins of the brand teal and pink. The
+   brand values are fine for titles, fills and shapes (as the deck uses them) but
+   fall below readable contrast as small body text on white.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* brand */
+  --navy: #0C173B;
+  --teal: #00B7B5;
+  --pink: #ED186B;
+  --amber: #FFC550;          /* connectors, pins, third-in-sequence — never a main colour */
+  --ink: #585858;            /* body text */
+
+  /* tints (card borders, fills, blobs) */
+  --teal-border: #E6F7F7;
+  --teal-fill: #F4FBFB;
+  --mint: #F3FBFB;
+  --pink-border: #FCE8F0;
+  --pink-fill: #FFF5F7;
+  --pink-head: #FCDCE8;
+  --amber-fill: #FFF6DD;     /* derived from the amber, for flag callouts */
+
+  /* small-text twins (extension — see header) */
+  --teal-ink: #007F7D;
+  --pink-ink: #C70F58;
+  --amber-ink: #8A5B00;
+
+  --radius: 20px;
+  --radius-sm: 12px;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.save7-look {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+}
+
+/* ---- the two backdrop blobs: pale mint top-right, pale pink bottom-left ---- */
+.save7-look::before,
+.save7-look::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.save7-look::before { top: -22vw; right: -16vw; width: 52vw; height: 52vw; background: var(--mint); }
+.save7-look::after  { bottom: -20vw; left: -12vw; width: 38vw; height: 38vw; background: var(--pink-fill); }
+
+/* ---- the two-circle motif: big teal, smaller pink, overlapping ---- */
+.circles { position: relative; width: 104px; height: 96px; flex: none; }
+.circles::before,
+.circles::after { content: ''; position: absolute; border-radius: 50%; }
+.circles::before { top: 0; right: 0; width: 72px; height: 72px; background: var(--teal); }
+.circles::after  { bottom: 0; left: 6px; width: 44px; height: 44px; background: var(--pink); }
+
+/* ---- type ---- */
+.eyebrow { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: var(--pink-ink); }
+.eyebrow.teal { color: var(--teal-ink); }
+.title { margin: 0; font-weight: 700; color: var(--navy); line-height: 1.15; letter-spacing: -0.01em; }
+.title .dot { color: var(--pink); }
+.title .accent { color: var(--teal); }
+h1.title { font-size: 40px; }
+h2.title { font-size: 26px; }
+h3.title { font-size: 18px; }
+.lede { color: var(--ink); font-size: 15px; max-width: 70ch; }
+.strong { font-weight: 700; color: var(--navy); }
+.muted { color: #8a8a8a; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ---- cards: white, large radius, hairline tinted border; alternate teal/pink ---- */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.card.pink { border-color: var(--pink-border); }
+.card.tint-teal { background: var(--teal-fill); }
+.card.tint-pink { background: var(--pink-fill); }
+.card-label { margin: 0 0 10px; font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ---- number pills ("01", "BARRIER 01") ---- */
+.num {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.num.pink { background: var(--pink); }
+.num.amber { background: var(--amber); color: var(--navy); }
+
+/* ---- buttons: outlined teal pill; pink for the primary ---- */
+.btn {
+  font: 600 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--teal-fill); }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+.btn.primary:hover { background: #d4125d; }
+.btn.quiet { border-color: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--teal-fill); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* ---- status chips: small, pale ---- */
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-border);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+.chip.pink { background: var(--pink-border); color: var(--pink-ink); }
+.chip.amber { background: #FFEFC2; color: var(--amber-ink); }
+.chip.grey { background: #F1F1F3; color: #666; }
+
+/* ---- tabs: pill row, active in pink ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 600 13px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--teal-fill); }
+.tab[aria-selected="true"] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+
+/* ---- form controls ---- */
+input[type="text"], select {
+  font: 500 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+input[type="text"]::placeholder { color: #a5a5a5; }
+
+/* ---- labelled field rows ---- */
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.fields dt { font-weight: 600; font-size: 12px; color: #8a8a8a; align-self: center; }
+.fields dd { margin: 0; color: var(--navy); font-weight: 600; }
+
+/* ---- timeline bar: alternating teal and pink segments, amber pin on the current one ---- */
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.bar > i { flex: 1; background: var(--teal); }
+.bar > i:nth-child(even) { background: var(--pink); }
+.bar > i.todo { opacity: 0.22; }
+
+/* ---- callout: amber, for open questions the user should react to ---- */
+.flag {
+  background: var(--amber-fill);
+  border: 1.5px solid #FFE7A8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #5a4300;
+}
+.flag b { color: var(--amber-ink); }
+
+/* ---- logo ---- */
+.logo { display: block; height: 22px; width: auto; }
+
+</style>
+<style>
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 90px; }
+  .hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  .hero .logo { margin-bottom: 28px; }
+  .hero .lede { margin: 12px 0 0; }
+  .scope { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .section-title { margin: 44px 0 14px; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; margin-top: 30px; }
+  .grid-eq { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (max-width: 920px) { .grid2 { grid-template-columns: 1fr; } .hero .circles { display: none; } h1.title { font-size: 32px; } }
+
+  /* who is at the keyboard */
+  .pickrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .pickrow .or { font-size: 12px; color: #8a8a8a; margin-left: 4px; }
+  .pickrow input { width: 190px; }
+
+  /* the person's screen */
+  .screen { position: relative; overflow: hidden; background: #fff; border: 1.5px solid var(--teal-border); border-radius: 24px; padding: 24px 28px 30px; min-height: 380px; }
+  .screen::before { content: ''; position: absolute; top: -100px; right: -100px; width: 270px; height: 270px; border-radius: 50%; background: var(--mint); }
+  .screen::after  { content: ''; position: absolute; bottom: -120px; left: -90px; width: 250px; height: 250px; border-radius: 50%; background: var(--pink-fill); }
+  .screen > * { position: relative; z-index: 1; }
+  .screen .mini { position: absolute; top: 16px; right: 22px; transform: scale(0.5); transform-origin: top right; z-index: 1; }
+  .screen .logo { height: 18px; }
+  .screen .body { max-width: 440px; margin-top: 30px; }
+  .screen .body .title { font-size: 28px; }
+  .screen .body p { margin: 10px 0; }
+  .screen .small { font-size: 12.5px; color: #7a7a7a; }
+  .screen .link { color: var(--teal-ink); font-weight: 600; }
+  .screen .facts { margin: 14px 0; padding: 14px 16px; background: var(--teal-fill); border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); }
+  .screen .facts.pinkish { background: var(--pink-fill); border-color: var(--pink-border); }
+  .screen .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+  .screen .branches { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; }
+  .protonote { display: block; margin-top: 14px; font-size: 11px; color: #9a9a9a; }
+
+  /* strips and lists */
+  .strip { margin-top: 14px; padding-top: 14px; border-top: 1.5px dashed var(--teal-border); }
+  .strip .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .strip .cap { font-size: 12px; font-weight: 600; color: #8a8a8a; margin: 0 0 8px; }
+  .flags { display: grid; gap: 10px; margin-top: 14px; }
+  .last { margin: 16px 0 6px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; color: var(--navy); }
+  .last.ok { background: var(--teal-fill); border: 1.5px solid var(--teal-border); }
+  .last.no { background: var(--pink-fill); border: 1.5px solid var(--pink-border); }
+  .last .tag { margin-right: 6px; }
+  .log { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; max-height: 210px; overflow: auto; }
+  .log li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; color: #666; }
+  .log li.no { color: var(--pink-ink); }
+  .log li .m { font-weight: 700; }
+  h4.sub { margin: 18px 0 0; font-size: 12px; font-weight: 700; color: #8a8a8a; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* the answering stand-in */
+  .who { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+  .hubtabs { margin-bottom: 12px; }
+  .list { display: grid; gap: 8px; }
+  .item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 12px; border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); background: #fff; }
+  .item:nth-child(even) { border-color: var(--pink-border); }
+  .item .what { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+  .item .what b { color: var(--navy); }
+  .item .acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .item .btn { padding: 5px 12px; font-size: 12px; }
+  .empty { padding: 16px; text-align: center; color: #9a9a9a; border: 1.5px dashed var(--teal-border); border-radius: var(--radius-sm); }
+  .inviteform { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .inviteform input { flex: 1; min-width: 190px; }
+
+  /* walkthroughs */
+  .scen-blurb { margin: 16px 0 6px; }
+  .watch { margin: 10px 0 16px; }
+  .steps { display: grid; gap: 8px; margin-top: 14px; }
+  .stepbtn { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; font: 600 13.5px var(--font); color: var(--navy); background: #fff; border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 10px 14px; cursor: pointer; }
+  .stepbtn:nth-child(even) { border-color: var(--pink-border); }
+  .stepbtn.next { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .stepbtn.next .num { background: #fff; color: var(--pink-ink); }
+  .stepbtn.done { opacity: 0.55; }
+  .stepbtn:disabled:not(.done) { opacity: 0.45; cursor: not-allowed; }
+  .stepbtn:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .stepbtn .num { flex: none; min-width: 34px; text-align: center; }
+  .scen-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+</style>
+</head>
+<body class="save7-look">
+<div class="wrap">
+
+  <header class="hero">
+    <div>
+      <img class="logo" src="data:image/png;base64,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" alt="Save Seven">
+      <p class="eyebrow">Prototype · Landing page login/signup flow &amp; doors</p>
+      <h1 class="title">How a person gets in<span class="dot">.</span></h1>
+      <p class="lede"><span class="strong">The question this answers:</span> from the Sign-in page to a Dashboard, what does a person see on each way in — and is every state a person can be in accounted for, with no dead end and no way in that skips an approval?</p>
+      <p class="lede">Pick who is at the keyboard and press the buttons on their screen, press the buttons for the people who answer, or run a walkthrough below. Anything marked <span class="chip amber">Open question</span> is something to react to, not a decision.</p>
+      <div class="scope">
+        <span class="chip">Built on: one sign-in, no role doors, two ways in</span>
+        <span class="chip pink">Not designed here: the Dashboard, the Users hub, funder &amp; external-volunteer doors</span>
+      </div>
+    </div>
+    <div class="circles" aria-hidden="true"></div>
+  </header>
+
+  <!-- ===================== NOW: the person and the state ===================== -->
+  <section class="grid2" aria-label="Current state">
+    <div class="card">
+      <p class="card-label">At the keyboard</p>
+      <div class="pickrow" id="pickrow"></div>
+      <div class="screen" id="screen" aria-live="polite"></div>
+      <div class="flags" id="flags"></div>
+
+      <div class="strip">
+        <p class="cap">Try an action whatever the screen says — an illegal one is refused, and says why</p>
+        <div class="row">
+          <select id="tryBranch" aria-label="Branch to name">
+            <option value="">no branch</option>
+          </select>
+          <button class="btn" data-act="try-ask">Ask for access</button>
+          <button class="btn" data-act="try-withdraw">Withdraw request</button>
+          <button class="btn" data-act="signin">Sign in again</button>
+          <button class="btn quiet" data-act="signout">Sign out</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <p class="card-label">State</p>
+      <dl class="fields" id="fields"></dl>
+      <div id="last"></div>
+      <h4 class="sub">What has happened</h4>
+      <ol class="log" id="log"></ol>
+    </div>
+  </section>
+
+  <!-- ===================== FREE-PLAY: the people who answer ===================== -->
+  <h2 class="title section-title">The people who answer<span class="dot">.</span></h2>
+  <section class="card tint-teal" aria-label="The people who answer">
+    <p class="muted" style="margin:0 0 4px;font-size:12.5px">A stand-in for the Users hub and Branch Centre — it shows the <em>effect</em> of each act, not how either looks. Every button is always live; the ones the acting seat may not press are refused.</p>
+    <p class="strong" style="margin:12px 0 0;font-size:12.5px">Acting as</p>
+    <div class="who" id="who"></div>
+
+    <div class="tabs hubtabs" id="hubtabs" role="tablist"></div>
+    <div class="list" id="hubpanel"></div>
+
+    <div class="strip">
+      <p class="cap">Invite someone — needs National Exco or the General Liaison</p>
+      <div class="inviteform">
+        <input type="text" id="inviteAddr" placeholder="name@save7.org" aria-label="Save7 address to invite">
+        <button class="btn primary" data-act="invite">Send invitation</button>
+        <input type="text" id="rejectReason" placeholder="Reason for a rejection (optional)" aria-label="Reason for a rejection" style="min-width:230px">
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GUIDED WALKTHROUGHS ===================== -->
+  <h2 class="title section-title">Walkthroughs<span class="dot">.</span></h2>
+  <section class="card pink" aria-label="Guided walkthroughs">
+    <div class="scen-top">
+      <p class="muted" style="margin:0;font-size:12.5px">Starting a walkthrough resets everything to a known state, so it runs the same way every time.</p>
+      <button class="btn quiet" data-act="reset-all">Reset everything</button>
+    </div>
+    <div class="tabs" id="scentabs" role="tablist" style="margin-top:12px"></div>
+    <div id="scenbody"></div>
+  </section>
+
+</div>
+
+<!-- =====================================================================
+     THE LOGIC. Pure — no DOM, no document, no handlers. This block is the part
+     worth keeping; the page below it is a throwaway shell.
+     Stands for: who lands where after signing in, and which acts are legal.
+     ===================================================================== -->
+<script id="model">
+const Model = (() => {
+  const BRANCHES = ['UCT', 'Stellenbosch', 'Wits', 'UP', 'UJ'];
+  const DOMAIN = '@save7.org';
+  const TODAY = '7 Oct 2026';
+
+  const nameOf = a => { const n = a.split('@')[0]; return n.charAt(0).toUpperCase() + n.slice(1); };
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const inWorkspace = a => a.endsWith(DOMAIN);
+  const actorLabel = x => x.role === 'exco' ? 'National Exco' : x.role === 'gl' ? 'the General Liaison' : `${x.branch}'s Branch Management`;
+  const whoAnswers = r => r.branch ? `${r.branch}'s Branch Management` : 'the General Liaison';
+  const whoReactivates = acct => acct.branch ? `${acct.branch}'s Branch Management` : 'the General Liaison';
+
+  /** The request that still decides what someone sees: the latest one, if it is pending or rejected. */
+  const latestOpen = (w, a) => {
+    const rs = w.requests.filter(r => r.address === a);
+    const r = rs[rs.length - 1];
+    return r && (r.status === 'pending' || r.status === 'rejected') ? r : null;
+  };
+
+  const canAnswer = (actor, req) => actor.role !== 'bm' || actor.branch === req.branch;
+  const canSwitchActive = (actor, acct) =>
+    actor.role === 'exco' || (actor.role === 'bm' && actor.branch === acct.branch) || (actor.role === 'gl' && !acct.branch);
+  const opensUsersHub = actor => actor.role === 'exco' || actor.role === 'gl';
+
+  function seed() {
+    const w = {
+      signedIn: null,                    // the address signed in, or null
+      shown: null,                       // what that person was last SHOWN — it changes only when they act
+      course: {                          // stand-in for the signal learn.save7.org gives
+        'amina@save7.org': true, 'sipho@save7.org': false, 'lerato@save7.org': false,
+        'naledi@save7.org': true, 'kagiso@save7.org': true
+      },
+      accounts: {
+        'naledi@save7.org': { name: 'Naledi', branch: 'UCT',  status: 'approved', invited: false, invitedBy: null, claimed: true },
+        'kagiso@save7.org': { name: 'Kagiso', branch: 'Wits', status: 'approved', invited: false, invitedBy: null, claimed: true }
+      },
+      requests: [],                      // { id, address, branch, status: pending|approved|rejected|withdrawn, reason, answeredBy, askedOn }
+      deleted: [],                       // { address, name, branch, by, on }
+      nextId: 1
+    };
+    w.shown = { screen: 'signin' };
+    return w;
+  }
+
+  /** Where signing in lands someone, from the state of the account behind the address. */
+  function landing(w) {
+    const a = w.signedIn;
+    if (!a) return { screen: 'signin' };
+    if (!inWorkspace(a)) return { screen: 'outside', address: a };
+    const acct = w.accounts[a];
+    if (acct) {
+      if (acct.status === 'deactivated') return { screen: 'deactivated', acct, who: whoReactivates(acct) };
+      return { screen: 'dashboard', acct };
+    }
+    const req = latestOpen(w, a);
+    if (req && req.status === 'pending')  return { screen: 'pending', req, who: whoAnswers(req) };
+    if (req && req.status === 'rejected') return { screen: 'rejected', req };
+    return { screen: w.course[a] ? 'ask' : 'ask-no-course', address: a };
+  }
+
+  /** (world, action) -> { w, ok, note, flag }.  A refusal returns the world untouched. */
+  function step(world, a) {
+    const w = structuredClone(world);
+    const no  = note => ({ w: world, ok: false, note });
+    const yes = (note, flag) => ({ w, ok: true, note, flag });
+    const addr = a.address ? a.address.trim().toLowerCase() : null;
+    const show = () => { w.shown = landing(w); };
+
+    switch (a.type) {
+
+      case 'signIn': {
+        if (!addr) return no('Refused: there is no address to sign in with.');
+        w.signedIn = addr;
+        if (!inWorkspace(addr)) {
+          show();
+          return yes(`${addr} tried to sign in. It is not a Save7 address, so Save7 OS refuses it — the check is on the verified identity, as it is today.`);
+        }
+        const acct = w.accounts[addr];
+        if (acct && acct.invited && !acct.claimed) {
+          acct.claimed = true; show();
+          return yes(`${nameOf(addr)} signed in. The invitation was claimed by this first sign-in — no waiting, no course.`);
+        }
+        show();
+        return yes(`${nameOf(addr)} signed in.`);
+      }
+
+      case 'signOut':
+        w.signedIn = null; show();
+        return yes('Signed out. Back at the Sign-in page.');
+
+      case 'setCourse':
+        w.course[addr] = !!a.finished;
+        return yes(`(Stand-in for learn.save7.org) ${nameOf(addr)}'s course is now ${a.finished ? 'finished' : 'not finished'}. Nobody tells them — their screen changes the next time they sign in.`);
+
+      case 'askForAccess': {
+        const who = w.signedIn;
+        if (!who) return no('Refused: nobody is signed in, so there is nobody to ask.');
+        const l = landing(world);
+        if (l.screen === 'outside') return no(`Refused: ${who} is outside the Save7 domain and cannot sign in at all.`);
+        if (l.screen === 'dashboard' || l.screen === 'deactivated') return no(`Refused: ${nameOf(who)} already has an account.`);
+        if (l.screen === 'pending') return no(`Refused: ${nameOf(who)} already has a request waiting. A pending request cannot be edited — withdraw it and ask afresh.`);
+        if (l.screen === 'ask-no-course') return no(`Refused: ${nameOf(who)} has not finished the course, so there is no form to send.`);
+        const branch = a.branch || null;
+        if (branch && !BRANCHES.includes(branch)) return no('Refused: that is not a branch.');
+        const again = l.screen === 'rejected';
+        const req = { id: w.nextId++, address: who, branch, status: 'pending', reason: null, answeredBy: null, askedOn: TODAY };
+        w.requests.push(req);
+        show();
+        return yes(`${nameOf(who)} ${again ? 'asked again' : 'asked for access'}, naming ${branch || 'no branch'}. It waits Pending for ${whoAnswers(req)}. ${again ? 'The old rejection stays in the Rejected tab. ' : ''}Nothing is emailed to anyone.`);
+      }
+
+      case 'withdraw': {
+        const who = w.signedIn;
+        if (!who) return no('Refused: nobody is signed in.');
+        const l = landing(world);
+        if (l.screen !== 'pending') return no(`Refused: ${nameOf(who)} has no pending request to withdraw${w.accounts[who] ? ' — it was already answered; signing in again shows how' : ''}.`);
+        latestOpen(w, who).status = 'withdrawn';
+        show();
+        return yes(`${nameOf(who)} withdrew the request. They are back at Ask for access with nothing pending.`);
+      }
+
+      case 'answer': {
+        const req = addr && latestOpen(w, addr);
+        if (!req || req.status !== 'pending') return no(`Refused: ${addr} has no pending request to answer.`);
+        if (!canAnswer(a.actor, req)) {
+          return no(`Refused: ${cap(actorLabel(a.actor))} cannot answer this one. It was sent to ${whoAnswers(req)}; only that, the General Liaison or National Exco may answer it.`);
+        }
+        req.answeredBy = actorLabel(a.actor);
+        if (a.decision === 'approve') {
+          req.status = 'approved';
+          w.accounts[addr] = { name: nameOf(addr), branch: req.branch, status: 'approved', invited: false, invitedBy: null, claimed: true };
+          return yes(`${cap(actorLabel(a.actor))} approved ${nameOf(addr)}'s request. Their account exists — but nothing tells them; they find out the next time they sign in.`);
+        }
+        req.status = 'rejected';
+        req.reason = (a.reason || '').trim() || null;
+        return yes(`${cap(actorLabel(a.actor))} rejected ${nameOf(addr)}'s request${req.reason ? ` with a reason (“${req.reason}”)` : ', giving no reason'}. Nothing is emailed; they see it when they sign in.`);
+      }
+
+      case 'invite': {
+        if (!opensUsersHub(a.actor)) return no(`Refused: ${cap(actorLabel(a.actor))} cannot invite anyone. Only National Exco and the General Liaison open the Users hub.`);
+        if (!addr || !inWorkspace(addr)) return no('Refused: an invitation goes to a Save7 address (…@save7.org) the inviter has arranged.');
+        const ex = w.accounts[addr];
+        if (ex) return no(`Refused: ${addr} already has an account${ex.status === 'deactivated' ? ' (deactivated — reactivate it instead)' : ''}${ex.invited && !ex.claimed ? ', and an invitation is already waiting for it' : ''}.`);
+        const by = actorLabel(a.actor);
+        const pend = latestOpen(w, addr);
+        if (pend && pend.status === 'pending') {
+          pend.status = 'approved'; pend.answeredBy = `${by}, by invitation`;
+          w.accounts[addr] = { name: nameOf(addr), branch: pend.branch, status: 'approved', invited: true, invitedBy: by, claimed: w.signedIn === addr };
+          return yes(`${cap(by)} invited ${addr}, who was waiting Pending — so the invitation approved the request. The branch they named (${pend.branch || 'none'}) stands.`, 'invite-keeps-branch');
+        }
+        w.accounts[addr] = { name: nameOf(addr), branch: null, status: 'approved', invited: true, invitedBy: by, claimed: false };
+        return yes(`${cap(by)} invited ${addr}. That is a standing approval of the address — an account waiting for its owner, branchless until moved. The link only points at the Sign-in page.`);
+      }
+
+      case 'withdrawInvite': {
+        if (!opensUsersHub(a.actor)) return no(`Refused: ${cap(actorLabel(a.actor))} cannot withdraw an invitation.`);
+        const ex = addr && w.accounts[addr];
+        if (!ex || !ex.invited || ex.claimed) return no(`Refused: only an invitation nobody has claimed yet can be withdrawn.${ex ? ` ${nameOf(addr)} has a real account; deleting one is National Exco's alone.` : ''}`);
+        delete w.accounts[addr];
+        return yes(`${cap(actorLabel(a.actor))} withdrew the invitation to ${addr}. That is not deleting an account — none existed yet.`);
+      }
+
+      case 'deactivate':
+      case 'reactivate': {
+        const ex = addr && w.accounts[addr];
+        if (!ex) return no(`Refused: ${addr} has no account.`);
+        if (!canSwitchActive(a.actor, ex)) {
+          return no(`Refused: ${cap(actorLabel(a.actor))} cannot switch ${nameOf(addr)}'s account. That belongs to ${ex.branch ? `${ex.branch}'s Branch Management` : 'the General Liaison'}, or National Exco.`);
+        }
+        ex.status = a.type === 'deactivate' ? 'deactivated' : 'approved';
+        return yes(`${cap(actorLabel(a.actor))} ${a.type === 'deactivate' ? 'deactivated' : 'reactivated'} ${ex.name}'s account. Nothing tells them; it shows the next time they sign in.`);
+      }
+
+      case 'delete': {
+        if (a.actor.role !== 'exco') return no(`Refused: only National Exco deletes an account. It costs a course and a Save7 address (or an invitation from the top) to get one, so destroying it is not a branch-level act.`);
+        const ex = addr && w.accounts[addr];
+        if (!ex) return no(`Refused: ${addr} has no account.`);
+        if (ex.invited && !ex.claimed) return no('Refused: that is an unclaimed invitation, not an account — withdraw it instead.');
+        delete w.accounts[addr];
+        w.deleted.push({ address: addr, name: ex.name, branch: ex.branch, by: 'National Exco', on: TODAY });
+        return yes(`National Exco deleted ${ex.name}'s account — gone for good, kept as a record in the Deleted tab. It is the end of an account, not a ban: their Save7 address still exists, so signing in finds no account and they may ask for access like anyone.`);
+      }
+    }
+    return no(`Unknown action ${a.type}.`);
+  }
+
+  return { BRANCHES, seed, step, landing, latestOpen, nameOf, actorLabel, whoAnswers };
+})();
+</script>
+
+<!-- =====================================================================
+     THE SHELL. Throwaway: wires buttons to the model and draws what it says.
+     ===================================================================== -->
+<script>
+(() => {
+  const M = Model;
+  const $ = s => document.querySelector(s);
+  const LOGO = document.querySelector('.hero .logo').src;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ------------------------------ the cast ------------------------------ */
+  const AM = 'amina@save7.org', SI = 'sipho@save7.org', LE = 'lerato@save7.org', NA = 'naledi@save7.org', KA = 'kagiso@save7.org', TH = 'thabo@gmail.com';
+  const PERSONAS = [
+    { a: AM, d: 'finished the course, no account yet' },
+    { a: SI, d: 'has not finished the course' },
+    { a: LE, d: 'no course — to be invited' },
+    { a: NA, d: 'approved volunteer at UCT' },
+    { a: KA, d: 'approved volunteer at Wits' },
+    { a: TH, d: 'personal Google account, outside Save7' }
+  ];
+  const EXCO = { role: 'exco' }, GL = { role: 'gl' }, BM = b => ({ role: 'bm', branch: b });
+  const ACTORS = [EXCO, GL, BM('UCT'), BM('Wits')];
+  const actorKey = x => x.role + (x.branch || '');
+  const ACTOR_NAMES = { exco: 'National Exco', gl: 'General Liaison' };
+  const actorName = x => ACTOR_NAMES[x.role] || `${x.branch} Branch Management`;
+
+  const SCREEN_NAMES = {
+    signin: 'Sign-in page',
+    outside: 'Refused — outside the Save7 domain',
+    dashboard: 'Dashboard',
+    'ask-no-course': 'Ask for access — “Finish the course first”',
+    ask: 'Ask for access — the form',
+    pending: 'Waiting screen',
+    rejected: 'Rejected screen — reason and ask again',
+    deactivated: 'Deactivated screen'
+  };
+
+  /* ------------------------------ page state ------------------------------ */
+  const UI = { pick: AM, branchPick: undefined, actor: EXCO, hubTab: 'pending', scen: null, stepIdx: 0 };
+  let world = M.seed();
+  let log = [];
+
+  function dispatch(action) {
+    const r = M.step(world, action);
+    world = r.w;
+    log.unshift({ ok: r.ok, note: r.note, flag: r.flag });
+    if (log.length > 40) log.pop();
+    if (action.type === 'signIn' && r.ok) UI.pick = action.address.trim().toLowerCase();
+    if (action.type === 'askForAccess' && r.ok) UI.branchPick = undefined;
+    render();
+    return r;
+  }
+
+  /* ------------------------------ the person's screen ------------------------------ */
+  function branchChooser() {
+    const opts = M.BRANCHES.map(b => `<button class="tab" role="radio" aria-checked="${UI.branchPick === b}" aria-selected="${UI.branchPick === b}" data-act="pickbranch" data-branch="${esc(b)}">${esc(b)}</button>`).join('');
+    const none = `<button class="tab" role="radio" aria-checked="${UI.branchPick === ''}" aria-selected="${UI.branchPick === ''}" data-act="pickbranch" data-branch="">None of these</button>`;
+    return `<div class="branches" role="radiogroup" aria-label="Your branch">${opts}${none}</div>`;
+  }
+
+  function screenHtml(s) {
+    const head = `<img class="logo" src="${LOGO}" alt="Save Seven"><div class="mini circles" aria-hidden="true"></div>`;
+    const wrap = body => `${head}<div class="body">${body}</div>`;
+    switch (s.screen) {
+      case 'signin':
+        return wrap(`
+          <p class="eyebrow">Save7 OS</p>
+          <h2 class="title">Sign in<span class="dot">.</span></h2>
+          <p>Use your Save7 address.</p>
+          <div class="row"><button class="btn primary" data-act="signin">Sign in with Google</button></div>
+          <p class="small" style="margin-top:18px">New to Save7? <span class="link">The course is at learn.save7.org</span>.</p>
+          <p class="protonote">Prototype: this button signs in as ${esc(M.nameOf(UI.pick))} (${esc(UI.pick)}).</p>`);
+      case 'outside':
+        return wrap(`
+          <p class="eyebrow">Can’t sign in</p>
+          <h2 class="title">That account can’t sign in<span class="dot">.</span></h2>
+          <p>Save7 OS is for Save7 addresses only. <b>${esc(s.address)}</b> sits outside the Save7 domain.</p>
+          <div class="row"><button class="btn primary" data-act="signout">Try another account</button></div>`);
+      case 'ask-no-course':
+        return wrap(`
+          <p class="eyebrow">Almost there</p>
+          <h2 class="title">Finish the course first<span class="dot">.</span></h2>
+          <p>Asking for access opens once you have finished the course at learn.save7.org. Finishing it does not let you in by itself — it lets you ask.</p>
+          <div class="row"><span class="btn" style="cursor:default">Go to learn.save7.org</span><button class="btn quiet" data-act="signout">Sign out</button></div>`);
+      case 'ask':
+      case 'rejected': {
+        const rej = s.screen === 'rejected';
+        const reason = rej ? `<div class="facts pinkish"><span class="strong">Your request was turned down.</span><br>${s.req.reason ? `“${esc(s.req.reason)}”` : 'No reason was given.'}<br><span class="small">${esc(s.req.answeredBy || '')} · you may ask again.</span></div>` : '';
+        return wrap(`
+          <p class="eyebrow">${rej ? 'Not this time' : 'Ask for access'}</p>
+          <h2 class="title">${rej ? 'Ask again' : 'Which branch are you with'}<span class="dot">${rej ? '.' : '?'}</span></h2>
+          ${reason}
+          <p>Choose your branch, or none if you are not at a university with a Save7 branch. That is all we ask — your name and address come from your account.</p>
+          ${branchChooser()}
+          <div class="row"><button class="btn primary" data-act="send" ${UI.branchPick === undefined ? 'disabled' : ''}>${rej ? 'Ask again' : 'Send request'}</button><button class="btn quiet" data-act="signout">Sign out</button></div>
+          <p class="small" style="margin-top:12px">${UI.branchPick === undefined ? 'Choose a branch, or “None of these”.' : `It goes to ${UI.branchPick ? esc(UI.branchPick) + '’s Branch Management' : 'the General Liaison'}. Nothing is emailed — sign in again to check.`}</p>`);
+      }
+      case 'pending':
+        return wrap(`
+          <p class="eyebrow">Waiting</p>
+          <h2 class="title">Your request is with ${esc(s.who)}<span class="dot">.</span></h2>
+          <dl class="fields facts">
+            <dt>Branch you chose</dt><dd>${s.req.branch ? esc(s.req.branch) : 'None'}</dd>
+            <dt>Asked</dt><dd>${esc(s.req.askedOn)}</dd>
+            <dt>Answered by</dt><dd>${esc(s.who)}</dd>
+          </dl>
+          <p><b>Nothing will email you.</b> Sign in again to see whether it has been answered.</p>
+          <div class="row"><button class="btn" data-act="signin">Check again</button><button class="btn" data-act="withdraw">Withdraw request</button><button class="btn quiet" data-act="signout">Sign out</button></div>`);
+      case 'deactivated':
+        return wrap(`
+          <p class="eyebrow">Account paused</p>
+          <h2 class="title">Your account is deactivated<span class="dot">.</span></h2>
+          <p>You cannot use Save7 OS right now. <b>${esc(s.who)}</b> can reactivate it.</p>
+          <div class="row"><button class="btn primary" data-act="signout">Sign out</button></div>`);
+      case 'dashboard': {
+        const a = s.acct;
+        return wrap(`
+          <p class="eyebrow">You’re in</p>
+          <h2 class="title">Welcome, ${esc(a.name)}<span class="dot">.</span></h2>
+          <p>This is where your Dashboard opens. It is not designed here — see <i>The personal dashboard: the frame</i>.</p>
+          <div class="row">
+            <span class="chip">${a.branch ? esc(a.branch) : 'No branch — the General Liaison looks after you'}</span>
+            ${a.invited ? `<span class="chip pink">Invited by ${esc(a.invitedBy)} — skipped the course</span>` : ''}
+          </div>
+          <div class="row"><button class="btn quiet" data-act="signout">Sign out</button></div>`);
+      }
+    }
+    return '';
+  }
+
+  function flagsFor(s) {
+    const out = [];
+    if (s.screen === 'ask-no-course') out.push(`<div class="flag"><b>Open question.</b> Is the course read from learn.save7.org, or does the Save7 address itself prove it? That is the acceptance-boundary session with Gilbert. The “Course finished” switch under State stands in for it — and if the address is proof, this screen may never be reached.</div>`);
+    if (s.screen === 'pending' || s.screen === 'rejected') out.push(`<div class="flag"><b>Open question.</b> A person only finds out by signing in again — notifications are tabled until after the merge. Is checking back acceptable for the first weeks? Watch the State panel: it shows when what they are looking at has gone stale.</div>`);
+    return out.join('');
+  }
+
+  /* ------------------------------ the State panel ------------------------------ */
+  function stateHtml() {
+    const subject = world.signedIn || UI.pick;
+    const acct = world.accounts[subject];
+    const req = M.latestOpen(world, subject);
+    const actual = M.landing({ ...world, signedIn: subject });
+    const shown = world.shown;
+    const inWs = subject.endsWith('@save7.org');
+    const course = !!world.course[subject];
+
+    let acctText = 'None';
+    if (acct) acctText = acct.status === 'deactivated' ? `Deactivated · ${acct.branch || 'no branch'}`
+      : acct.invited && !acct.claimed ? `Approved by invitation · not signed in yet · ${acct.branch || 'no branch'}`
+      : `Approved · ${acct.branch || 'no branch'}${acct.invited ? ' · invited' : ''}`;
+    let reqText = 'None';
+    if (req) reqText = req.status === 'pending' ? `Pending · ${req.branch || 'no branch'} → ${M.whoAnswers(req)}` : `Rejected${req.reason ? ` — “${req.reason}”` : ' — no reason given'}`;
+
+    const stale = world.signedIn && shown.screen !== actual.screen;
+    return `
+      <dt>Address</dt><dd>${esc(subject)} <span class="chip ${world.signedIn ? '' : 'grey'}">${world.signedIn ? 'signed in' : 'not signed in'}</span></dd>
+      <dt>On the Workspace</dt><dd>${inWs ? 'Yes' : 'No'}</dd>
+      <dt>Course finished</dt><dd>${inWs ? (course ? 'Yes' : 'No') : '—'} ${inWs ? `<button class="btn quiet" style="padding:2px 10px;font-size:11px" data-act="course" data-address="${esc(subject)}">switch (stands in for learn.save7.org)</button>` : ''}</dd>
+      <dt>Account</dt><dd>${esc(acctText)}</dd>
+      <dt>Access request</dt><dd>${esc(reqText)}</dd>
+      <dt>${world.signedIn ? 'Looking at' : 'Would land on'}</dt><dd>${esc(SCREEN_NAMES[world.signedIn ? shown.screen : actual.screen])}</dd>
+      ${world.signedIn ? `<dt>Next sign-in</dt><dd>${esc(SCREEN_NAMES[actual.screen])} ${stale ? '<span class="chip amber">differs — nobody has told them</span>' : ''}</dd>` : ''}`;
+  }
+
+  function lastHtml() {
+    if (!log.length) return '<div class="last ok">Nothing has happened yet. Press a button.</div>';
+    const l = log[0];
+    const flag = l.flag === 'invite-keeps-branch'
+      ? `<div class="flag" style="margin-top:10px"><b>Open question.</b> The glossary says an invited person arrives branchless, but here the invitation approved a request that already named a branch. This prototype lets the branch they named stand. Which should win?</div>` : '';
+    return `<div class="last ${l.ok ? 'ok' : 'no'}"><span class="chip ${l.ok ? '' : 'pink'} tag">${l.ok ? 'Done' : 'Refused'}</span>${esc(l.note)}${flag}</div>`;
+  }
+
+  function logHtml() {
+    return log.slice(1, 9).map(l => `<li class="${l.ok ? '' : 'no'}"><span class="m">${l.ok ? '✓' : '✗'}</span><span>${esc(l.note)}</span></li>`).join('') || '<li><span></span><span class="muted">Earlier steps appear here.</span></li>';
+  }
+
+  /* ------------------------------ the answering stand-in ------------------------------ */
+  function hubHtml() {
+    const pend = world.requests.filter(r => r.status === 'pending');
+    const rej = world.requests.filter(r => r.status === 'rejected');
+    const apprs = Object.entries(world.accounts);
+    const tabs = [['pending', `Pending (${pend.length})`], ['approved', `Approved (${apprs.length})`], ['rejected', `Rejected (${rej.length})`], ['deleted', `Deleted (${world.deleted.length})`]];
+    $('#hubtabs').innerHTML = tabs.map(([k, t]) => `<button class="tab" role="tab" aria-selected="${UI.hubTab === k}" data-act="hubtab" data-tab="${k}">${t}</button>`).join('');
+
+    let rows = '';
+    if (UI.hubTab === 'pending') rows = pend.map(r => `
+      <div class="item"><div class="what"><b>${esc(r.address)}</b><span class="chip">${r.branch ? esc(r.branch) : 'no branch'}</span><span class="muted">→ ${esc(M.whoAnswers(r))}</span></div>
+      <div class="acts"><button class="btn primary" data-act="answer" data-address="${esc(r.address)}" data-decision="approve">Approve</button><button class="btn" data-act="answer" data-address="${esc(r.address)}" data-decision="reject">Reject</button></div></div>`).join('');
+    if (UI.hubTab === 'approved') rows = apprs.map(([a, x]) => {
+      const unclaimed = x.invited && !x.claimed;
+      const chips = [`<span class="chip">${x.branch ? esc(x.branch) : 'no branch'}</span>`];
+      if (unclaimed) chips.push(`<span class="chip amber">Invited — not signed in yet</span>`);
+      else if (x.invited) chips.push(`<span class="chip pink">Invited by ${esc(x.invitedBy)}</span>`);
+      if (x.status === 'deactivated') chips.push(`<span class="chip grey">Deactivated</span>`);
+      const acts = unclaimed
+        ? `<button class="btn" data-act="withdrawInvite" data-address="${esc(a)}">Withdraw invitation</button>`
+        : `<button class="btn" data-act="${x.status === 'deactivated' ? 'reactivate' : 'deactivate'}" data-address="${esc(a)}">${x.status === 'deactivated' ? 'Reactivate' : 'Deactivate'}</button><button class="btn" data-act="delete" data-address="${esc(a)}">Delete</button>`;
+      return `<div class="item"><div class="what"><b>${esc(x.name)}</b><span class="muted">${esc(a)}</span>${chips.join('')}</div><div class="acts">${acts}</div></div>`;
+    }).join('');
+    if (UI.hubTab === 'rejected') rows = rej.map(r => `<div class="item"><div class="what"><b>${esc(r.address)}</b><span class="chip">${r.branch ? esc(r.branch) : 'no branch'}</span><span class="muted">${r.reason ? `“${esc(r.reason)}”` : 'no reason given'}</span></div></div>`).join('');
+    if (UI.hubTab === 'deleted') rows = world.deleted.map(d => `<div class="item"><div class="what"><b>${esc(d.name)}</b><span class="muted">${esc(d.address)} · deleted by ${esc(d.by)}, ${esc(d.on)}</span></div><span class="chip grey">cannot be restored</span></div>`).join('');
+    // Rejected people who were later approved still show a rejection in history — only the pending/rejected filter matters here.
+    return rows || `<div class="empty">Nothing here.</div>`;
+  }
+
+  /* ------------------------------ walkthroughs ------------------------------ */
+  const run = (w, actions) => actions.reduce((acc, a) => M.step(acc, a).w, w);
+  const SCEN = [
+    { title: 'The happy path',
+      blurb: 'Amina has finished the course and holds a Save7 address, but has no account. She asks for access and her branch answers.',
+      watch: 'After UCT’s Branch Management approves, Amina’s screen still says Waiting — nothing pushes to her. Only signing in again changes it.',
+      seed: () => M.seed(),
+      steps: [
+        ['Amina signs in', { type: 'signIn', address: AM }],
+        ['She asks for access, naming UCT', { type: 'askForAccess', branch: 'UCT' }],
+        ['She comes back and signs in again — nobody has answered yet', { type: 'signIn', address: AM }],
+        ['UCT’s Branch Management approves the request', { type: 'answer', actor: BM('UCT'), address: AM, decision: 'approve' }],
+        ['Amina comes back and signs in again', { type: 'signIn', address: AM }]
+      ] },
+    { title: 'Course not finished',
+      blurb: 'Sipho has a Save7 address but has not finished the course. The screen offers him no form until learn.save7.org says he has.',
+      watch: 'The refused “send a request anyway” — there is nothing to send. Then the switch flips and the form appears at his next sign-in.',
+      seed: () => M.seed(),
+      steps: [
+        ['Sipho signs in', { type: 'signIn', address: SI }],
+        ['He tries to send a request anyway', { type: 'askForAccess', branch: 'UCT' }],
+        ['learn.save7.org reports the course finished (the stand-in switch)', { type: 'setCourse', address: SI, finished: true }],
+        ['He signs in again', { type: 'signIn', address: SI }],
+        ['He asks for access, naming no branch', { type: 'askForAccess', branch: null }],
+        ['The General Liaison approves it', { type: 'answer', actor: GL, address: SI, decision: 'approve' }],
+        ['He signs in again', { type: 'signIn', address: SI }]
+      ] },
+    { title: 'Turned down, then asks again',
+      blurb: 'Wits’s Branch Management rejects Amina with a reason. She sees it, asks again elsewhere, and is approved.',
+      watch: 'The reason appears on her screen. After she asks again, the old rejection stays in the Rejected tab — nothing is overwritten.',
+      seed: () => M.seed(),
+      steps: [
+        ['Amina signs in', { type: 'signIn', address: AM }],
+        ['She asks for access, naming Wits', { type: 'askForAccess', branch: 'Wits' }],
+        ['Wits’s Branch Management rejects it: “We are full this term — try UCT.”', { type: 'answer', actor: BM('Wits'), address: AM, decision: 'reject', reason: 'We are full this term — try UCT.' }],
+        ['Amina signs in again', { type: 'signIn', address: AM }],
+        ['She asks again, naming UCT', { type: 'askForAccess', branch: 'UCT' }],
+        ['UCT’s Branch Management approves', { type: 'answer', actor: BM('UCT'), address: AM, decision: 'approve' }],
+        ['Amina signs in again', { type: 'signIn', address: AM }]
+      ] },
+    { title: 'Wrong branch: withdraw and re-ask',
+      blurb: 'Amina picks UCT by mistake. A pending request cannot be edited — she withdraws it and asks afresh.',
+      watch: 'Withdrawing puts her back at the form with nothing pending, and re-asking with “none” changes who answers: the General Liaison.',
+      seed: () => M.seed(),
+      steps: [
+        ['Amina signs in', { type: 'signIn', address: AM }],
+        ['She asks for access, naming UCT', { type: 'askForAccess', branch: 'UCT' }],
+        ['She realises it is the wrong branch and withdraws', { type: 'withdraw' }],
+        ['She asks again, naming none', { type: 'askForAccess', branch: null }],
+        ['The General Liaison approves', { type: 'answer', actor: GL, address: AM, decision: 'approve' }],
+        ['Amina signs in again', { type: 'signIn', address: AM }]
+      ] },
+    { title: 'An invitation, claimed by first sign-in',
+      blurb: 'National Exco invites Lerato, who has no course and no request. The invitation is a standing approval of her address — not a key.',
+      watch: 'Sipho, holding a forwarded copy of the link, gets nothing — the approval is for Lerato’s address only. Watch the Approved tab flip from “Invited — not signed in yet”.',
+      seed: () => M.seed(),
+      steps: [
+        ['National Exco invites lerato@save7.org', { type: 'invite', actor: EXCO, address: LE }],
+        ['Sipho signs in with a forwarded copy of the link', { type: 'signIn', address: SI }],
+        ['Lerato signs in', { type: 'signIn', address: LE }]
+      ] },
+    { title: 'Invitation collisions',
+      blurb: 'Amina is already waiting Pending. The invite form meets an approved address, a waiting request, and an invitation sent by mistake.',
+      watch: 'Inviting someone who is Pending approves their request — look at the flag on which branch they end up in. Withdrawing works only on an unclaimed invitation.',
+      seed: () => run(M.seed(), [{ type: 'signIn', address: AM }, { type: 'askForAccess', branch: 'UCT' }, { type: 'signOut' }]),
+      steps: [
+        ['The General Liaison invites naledi@save7.org — she is already approved', { type: 'invite', actor: GL, address: NA }],
+        ['The General Liaison invites amina@save7.org — she is waiting Pending', { type: 'invite', actor: GL, address: AM }],
+        ['National Exco invites lerato@save7.org by mistake', { type: 'invite', actor: EXCO, address: LE }],
+        ['The General Liaison withdraws that unclaimed invitation', { type: 'withdrawInvite', actor: GL, address: LE }],
+        ['National Exco tries to “withdraw” Naledi — she has a real account', { type: 'withdrawInvite', actor: EXCO, address: NA }]
+      ] },
+    { title: 'Deactivated, then deleted',
+      blurb: 'Naledi is an approved UCT volunteer. Her branch pauses her, reactivates her, and later National Exco deletes the account.',
+      watch: 'The deactivated screen names who can reactivate. After deletion she is not barred — she lands on Ask for access like anyone, and the Deleted tab keeps the record.',
+      seed: () => M.seed(),
+      steps: [
+        ['UCT’s Branch Management deactivates Naledi', { type: 'deactivate', actor: BM('UCT'), address: NA }],
+        ['Naledi signs in', { type: 'signIn', address: NA }],
+        ['UCT’s Branch Management reactivates her', { type: 'reactivate', actor: BM('UCT'), address: NA }],
+        ['Naledi signs in again', { type: 'signIn', address: NA }],
+        ['National Exco deletes Naledi’s account', { type: 'delete', actor: EXCO, address: NA }],
+        ['Naledi signs in', { type: 'signIn', address: NA }],
+        ['She asks for access, naming Stellenbosch', { type: 'askForAccess', branch: 'Stellenbosch' }]
+      ] },
+    { title: 'The wrong people try',
+      blurb: 'Amina is waiting Pending at UCT and Naledi is approved there. People try things their seat does not allow.',
+      watch: 'Every one of these is refused, with the reason. The last is a personal Google account, which never gets as far as a screen of its own.',
+      seed: () => run(M.seed(), [{ type: 'signIn', address: AM }, { type: 'askForAccess', branch: 'UCT' }, { type: 'signOut' }]),
+      steps: [
+        ['Wits’s Branch Management tries to approve Amina’s UCT request', { type: 'answer', actor: BM('Wits'), address: AM, decision: 'approve' }],
+        ['UCT’s Branch Management tries to invite someone', { type: 'invite', actor: BM('UCT'), address: LE }],
+        ['The General Liaison tries to delete Naledi', { type: 'delete', actor: GL, address: NA }],
+        ['The General Liaison tries to deactivate Naledi — she has a branch', { type: 'deactivate', actor: GL, address: NA }],
+        ['UCT’s Branch Management tries to deactivate Kagiso, a Wits volunteer', { type: 'deactivate', actor: BM('UCT'), address: KA }],
+        ['Thabo tries to sign in with his personal Google account', { type: 'signIn', address: TH }]
+      ] }
+  ];
+
+  function startScenario(i) {
+    const sc = SCEN[i];
+    world = sc.seed();
+    log = [];
+    UI.scen = i; UI.stepIdx = 0; UI.hubTab = 'pending'; UI.branchPick = undefined;
+    UI.pick = sc.steps[0][1].address || AM;
+    render();
+  }
+
+  function scenHtml() {
+    $('#scentabs').innerHTML = SCEN.map((s, i) => `<button class="tab" role="tab" aria-selected="${UI.scen === i}" data-act="scen" data-i="${i}">${esc(s.title)}</button>`).join('');
+    if (UI.scen === null) return `<p class="scen-blurb">Pick a walkthrough to start from a known state.</p>`;
+    const sc = SCEN[UI.scen];
+    const bar = sc.steps.map((_, i) => `<i class="${i < UI.stepIdx ? '' : 'todo'}"></i>`).join('');
+    const btns = sc.steps.map(([label], i) => {
+      const done = i < UI.stepIdx, next = i === UI.stepIdx;
+      return `<button class="stepbtn ${done ? 'done' : ''} ${next ? 'next' : ''}" data-act="step" data-i="${i}" ${next ? '' : 'disabled'}><span class="num ${i % 2 ? 'pink' : ''}">${done ? '✓' : String(i + 1).padStart(2, '0')}</span><span>${esc(label)}</span></button>`;
+    }).join('');
+    return `
+      <p class="scen-blurb">${esc(sc.blurb)}</p>
+      <div class="flag watch"><b>Watch for:</b> ${esc(sc.watch)}</div>
+      <div class="bar" aria-hidden="true">${bar}</div>
+      <div class="steps">${btns}</div>
+      ${UI.stepIdx >= sc.steps.length ? `<p class="strong" style="margin-top:14px">That is the walkthrough. <button class="btn" data-act="scen" data-i="${UI.scen}">Run it again</button></p>` : ''}`;
+  }
+
+  /* ------------------------------ render ------------------------------ */
+  function render() {
+    $('#pickrow').innerHTML = PERSONAS.map(p =>
+      `<button class="tab" title="${esc(p.d)}" aria-selected="${UI.pick === p.a}" data-act="pick" data-a="${esc(p.a)}">${esc(M.nameOf(p.a))}</button>`).join('')
+      + `<span class="or">or</span><input type="text" id="customAddr" placeholder="another address" aria-label="Another address" value="${PERSONAS.some(p => p.a === UI.pick) ? '' : esc(UI.pick)}">`;
+    $('#screen').innerHTML = screenHtml(world.shown);
+    $('#flags').innerHTML = flagsFor(world.shown);
+    $('#fields').innerHTML = stateHtml();
+    $('#last').innerHTML = lastHtml();
+    $('#log').innerHTML = logHtml();
+    $('#who').innerHTML = ACTORS.map(x => `<button class="tab" aria-selected="${actorKey(UI.actor) === actorKey(x)}" data-act="actor" data-k="${actorKey(x)}">${esc(actorName(x))}</button>`).join('');
+    $('#hubpanel').innerHTML = hubHtml();
+    $('#scenbody').innerHTML = scenHtml();
+  }
+
+  /* ------------------------------ wiring ------------------------------ */
+  const tryBranch = $('#tryBranch');
+  M.BRANCHES.forEach(b => tryBranch.insertAdjacentHTML('beforeend', `<option value="${esc(b)}">${esc(b)}</option>`));
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-act]');
+    if (!t) return;
+    const d = t.dataset;
+    switch (d.act) {
+      case 'pick':
+        UI.pick = d.a;
+        if (world.signedIn) dispatch({ type: 'signOut' }); else render();
+        break;
+      case 'signin': dispatch({ type: 'signIn', address: world.signedIn || UI.pick }); break;
+      case 'signout': dispatch({ type: 'signOut' }); break;
+      case 'pickbranch': UI.branchPick = d.branch; render(); break;
+      case 'send': dispatch({ type: 'askForAccess', branch: UI.branchPick || null }); break;
+      case 'try-ask': dispatch({ type: 'askForAccess', branch: tryBranch.value || null }); break;
+      case 'try-withdraw': case 'withdraw': dispatch({ type: 'withdraw' }); break;
+      case 'course': dispatch({ type: 'setCourse', address: d.address, finished: !world.course[d.address] }); break;
+      case 'actor': UI.actor = ACTORS.find(x => actorKey(x) === d.k); render(); break;
+      case 'hubtab': UI.hubTab = d.tab; render(); break;
+      case 'answer': dispatch({ type: 'answer', actor: UI.actor, address: d.address, decision: d.decision, reason: $('#rejectReason').value }); break;
+      case 'invite': dispatch({ type: 'invite', actor: UI.actor, address: $('#inviteAddr').value }); break;
+      case 'withdrawInvite': case 'deactivate': case 'reactivate': case 'delete':
+        dispatch({ type: d.act, actor: UI.actor, address: d.address }); break;
+      case 'scen': startScenario(Number(d.i)); break;
+      case 'step': {
+        const sc = SCEN[UI.scen]; const [, action] = sc.steps[UI.stepIdx];
+        UI.stepIdx++;
+        dispatch(action);
+        break;
+      }
+      case 'reset-all': world = M.seed(); log = []; UI.scen = null; UI.stepIdx = 0; UI.pick = AM; UI.branchPick = undefined; render(); break;
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (e.target.id === 'customAddr') { const v = e.target.value.trim().toLowerCase(); if (v) { UI.pick = v; if (world.signedIn) dispatch({ type: 'signOut' }); else render(); } }
+    if (e.target.id === 'inviteAddr') dispatch({ type: 'invite', actor: UI.actor, address: e.target.value });
+  });
+  document.addEventListener('change', e => {
+    if (e.target.id === 'customAddr') { const v = e.target.value.trim().toLowerCase(); if (v) { UI.pick = v; if (world.signedIn) dispatch({ type: 'signOut' }); else render(); } }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
