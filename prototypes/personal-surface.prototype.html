@@ -490,12 +490,12 @@ function renderWork(){
           qm(10,"Q10 — settled: one merged queue, each row badged with the hat it arrives through.")+'</p>';
 
   if (variant==="merged"){
-    h += '<h2>On you <span class="count">('+q.length+')</span>'+
+    h += '<h2>Waiting on you <span class="count">('+q.length+')</span>'+
          qm(4,"Q4 — one merged list, or separate sections per kind? Switch at the bottom of the screen.")+
          (acts?qm(5,"Q5 — can you act here, or only look? These buttons are the contested part."):'')+'</h2>';
     h += '<ul class="q">'+q.map(row).join('')+'</ul>';
   } else {
-    h += '<h2>On you — split by kind'+qm(4,"Q4 — this is the alternative: separate sections per kind.")+'</h2>';
+    h += '<h2>Waiting on you — split by kind'+qm(4,"Q4 — this is the alternative: separate sections per kind.")+'</h2>';
     ["task","action","owed","mou"].forEach(k=>{
       const g = q.filter(o=>o.k===k);
       if(!g.length) return;
