@@ -1667,6 +1667,10 @@ body[data-page="mywork"] .wrap{padding-top:34px}
 /* ================= PROTOTYPE-ONLY (not Save7 OS) ================= */
 .pq{background:#FFF6DD;border:1.5px solid #FFE7A8;border-radius:12px;padding:11px 14px;font-size:12.5px;color:#5a4300;margin:0 0 14px;display:flex;gap:10px;align-items:flex-start}
 .pq b{color:#8A5B00}
+.pq.settled{background:var(--teal-50,#F2FBFA);border-color:var(--teal-line,#C7ECEA);color:#0C3B3A}
+.pq.settled b{color:#0F8E8A}
+.pq.settled .qn{background:#C7ECEA}
+.pq details{margin-top:4px;color:#52514E}.pq summary{cursor:pointer;font-size:11.5px}
 .pq .qn{flex:none;font-weight:800;font-size:11px;letter-spacing:.06em;background:#FFC550;color:#0C173B;border-radius:999px;padding:2px 8px;margin-top:1px}
 .duty{font-size:11px;font-weight:700;color:var(--pink-dark);white-space:nowrap}
 .duty.me{background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px}
@@ -1737,9 +1741,9 @@ body[data-page="mywork"] .wrap{padding-top:34px}
    Gilbert's stylesheet verbatim, his page structure, his copy, his icons. Only the data is
    invented, and the powers are re-seated.
 
-   Two rule sets on the floating bar (← → keys too), same screens:
-     A  The model's rules — CONTEXT.md and the #7 resolution.
-     B  Save7 OS's rules as live since 17 Nov 2026 — docs/nerve-centre-migration.md D54, D56,
+   Two rule sets on the floating bar (← → keys too), same screens. Since 2026-11-24 (#75) B IS the model:
+     B  Save7 OS's rules as live since 17 Nov 2026, adopted by the user as the model
+     A  #7 as first drawn, kept for comparison — docs/nerve-centre-migration.md D54, D56,
         C19, C20, 0140, 0141, 0154, 0163.
    Where they differ, an amber box names the question it raises for the joint session with
    Gilbert, numbered as on the GitHub issue that logs them.
@@ -1865,11 +1869,11 @@ let log = [];
 
 /* ============================ RULES ============================ */
 const RULESETS = [
-  { key: 'A', name: 'The model’s rules (CONTEXT.md, #7)' },
-  { key: 'B', name: 'Save7 OS as live (17 Nov 2026)' },
+  { key: 'B', name: 'The model: Save7 OS’s rules, adopted 24 Nov' },
+  { key: 'A', name: '#7 as first drawn (superseded by #75)' },
 ];
 const qs = new URLSearchParams(location.search);
-let rules = RULESETS.some(r => r.key === qs.get('rules')) ? qs.get('rules') : 'A';
+let rules = RULESETS.some(r => r.key === qs.get('rules')) ? qs.get('rules') : 'B';
 let seat = SEATS[qs.get('seat')] ? qs.get('seat') : 'cfo';
 let PAGE = qs.get('page') || null;
 let period = '12';
@@ -1908,7 +1912,26 @@ const dutyCell = c => { const d = dutyOf(c); if (!d) return ''; const mine = (se
 /* ============================ QUESTIONS ============================ */
 /* Numbered as on the GitHub issue that logs them for the joint session. */
 const Q = n => `<span class="qn">Q${n}</span>`;
-const pq = (n, html) => `<div class="pq">${Q(n)}<div>${html}</div></div>`;
+/* Settled on #75 (2026-11-24): the user ruled that Save7 OS's live build stands. */
+const SETTLED = {
+  1: 'The General Liaison writes the books beside Exco (D56).',
+  2: 'Whoever writes the books decides, the CFO by name; a seated Finance Manager decides their branch’s Claims.',
+  3: 'Both kinds of Claim can be queried and rejected (C19).',
+  4: 'Approving a spend line posts it; a personal-card line is paid out later (C20, 0140).',
+  5: 'Spend requests are a Finance Hub page; lead and decider as D41 and D37. Threshold set at the first Finance Manager.',
+  6: 'Budget plans are reviewed from the reviewer’s Dashboard and the Projects Hub.',
+  7: 'Budgets are set in the Finance Hub’s settings. A branch still reads its own Budget: Save7 OS hiding it is a bug for Gilbert.',
+  8: 'Branch seats reach Your money only; their branch’s Claims show there by name. Where a Finance Manager decides is #72’s.',
+  9: 'No totals of other branches for branch seats.',
+  10: 'Yes: the General Liaison reads everything, donors included.',
+  11: 'The financial year is the organisation’s own, separate from the tax year (C25).',
+  12: 'Whoever writes the books may file a claim for someone not on the platform (C21).',
+  13: 'The asset register is the Finance Hub’s, written by whoever writes the books.',
+  14: 'Yes: paying is open to the claimant; the decision is the check (0154).',
+};
+const pq = (n, html) => SETTLED[n]
+  ? `<div class="pq settled">${Q(n)}<div><b>Settled 24 Nov (#75):</b> ${SETTLED[n]}<details><summary>What was asked</summary>${html}</details></div></div>`
+  : `<div class="pq">${Q(n)}<div>${html}</div></div>`;
 
 /* ============================ ACTIONS ============================ */
 function toast(msg, kind = 'ok') {
@@ -2335,7 +2358,7 @@ function MyBranch() {
   const mine = lines.filter(c => c.who === me().name);
   let h = `<div class="grid g3">${tile('Approved spend', sum(lines.filter(c => c.status === 'approved'), c => c.amount), seat === 'bm' ? 'the whole branch' : 'your own lines', 'dark')}${tile('Awaiting approval', sum(lines.filter(c => c.status === 'pending'), c => c.amount), lines.filter(c => c.status === 'pending').length + ' lines')}${tile('Logged by me', sum(mine, c => c.amount), mine.length + ' of ' + lines.length + ' team lines')}</div>`;
   if (seat === 'bm') h += pq(8, `<b>A Branch Manager reads every ${BR[b]} line by name</b> here (Save7 OS’s <span class="mono">spend_read</span>, 0002), though they decide none of them. The model says the branch’s money duties sit with the Finance Manager alone. Keep the Branch Manager’s read?`);
-  h += secH(1, 'My team', BR[b] || 'No branch') + `<div class="grid g2">${card('What this team spends on', 'Approved lines, this branch only.', hbars(Object.entries(S.byCat[b] || {})))}<div class="card"><div class="card-b"><div class="ttl">Allocation</div>${MODEL() ? bbar(BR[b], spentOf(b), S.budgets.find(x => x.br === b).amount) : '<div class="bfoot">No allocation covers today. There is nothing to measure it against until finance sets one.</div>' + pq(7, 'Live, every member and branch seat reads <i>“No allocation covers today”</i>: Budgets are unreadable below finance (#7’s gap list). Flip to rule set A for the model’s read.')}<div class="k-v"><span class="k">Team manager</span><span class="v">${BR_MGR[b]}</span></div></div></div></div>`;
+  h += secH(1, 'My team', BR[b] || 'No branch') + `<div class="grid g2">${card('What this team spends on', 'Approved lines, this branch only.', hbars(Object.entries(S.byCat[b] || {})))}<div class="card"><div class="card-b"><div class="ttl">Allocation</div>${bbar(BR[b], spentOf(b), S.budgets.find(x => x.br === b).amount)}${MODEL() ? '' : pq(7, 'Live, every member and branch seat reads <i>“No allocation covers today”</i>: Budgets are unreadable below finance (#7’s gap list).')}<div class="k-v"><span class="k">Team manager</span><span class="v">${BR_MGR[b]}</span></div></div></div></div>`;
   h += secH(2, 'Spend log', 'Every line, with its receipt', seg() + `<button class="btn btn-p btn-s" onclick="openSpend()">Log spend + receipt</button>`);
   return h + `<div class="card">${tbl(['Date', 'What', 'Supplier', 'Category', '>Amount', 'Status', ''], lines.map(c => `<tr><td class="dim nw">${c.date}</td><td><div class="strong">${esc(c.what)}</div><div class="dim">${c.who === me().name ? 'You' : esc(c.who)}</div>${c.status === 'queried' ? `<div class="dim" style="color:var(--crit)">Query: ${esc(c.query)}</div>` : ''}</td><td class="dim">${esc(c.supplier)}</td><td><span class="chip">${esc(c.cat)}</span></td><td class="r strong">${money(c.amount)}</td><td>${badge(c.status)}</td><td class="r">${c.who === me().name && c.status === 'queried' ? `<button class="btn btn-p btn-s" onclick="answerQ('${c.id}')">Answer</button>` : c.who === me().name && c.status === 'pending' ? `<button class="ibtn" title="Withdraw" onclick="withdraw('${c.id}')">${IC.x}</button>` : ''}</td></tr>`), 'Nothing logged yet.')}</div>` +
     (seat === 'vol' && lines.some(c => c.status === 'queried') && !MODEL() ? pq(3, 'A queried line in Save7 OS can be answered here? In the live UI a queried line had no way forward (#7 gap: <span class="mono">05-a-money.js:339</span>). Check that it now does.') : '');
