@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finance Hub — PROTOTYPE</title>
+<!--
+  PROTOTYPE — THROWAWAY. Ticket #61, "Prototype: the Finance Hub".
+  Plan: three radically different layouts of the Finance Hub inside the Shell, switchable by
+  ?variant=A|B|C and the floating bar (← → keys too), crossed with a seat switcher
+  (?seat=cfo|cgo|gl|fm|bm|vol) so each layout can be checked against every seat that opens it.
+  Double-click to open. All state is in memory; every button is a stub that changes it.
+  Sources: CONTEXT.md as of 2026-11-24 (Finance Hub, Claim, Co-signatory, Budget, CFO,
+  Finance Manager, General Liaison, National Exco) and the #7 resolution.
+-->
+<style>
+/* ==========================================================================
+   SAVE7 LOOK — the visual vocabulary every prototype on the Nerve Centre map
+   shares. Taken from the KEPSA presentation ("KEPSA Slides - SANS"), which the
+   user gave on 2026-10-07 as the design direction for the OS and all prototypes.
+
+   Colours were sampled from the rendered PDF, not guessed. Typeface is
+   Montserrat (embedded in the deck: Regular, Medium, SemiBold, Bold, italics).
+
+   Use it: paste this file into a prototype's <style> block and put
+   class="save7-look" on <body>. A prototype is inlined rather than linked so it
+   opens by double-click and survives being emailed; this file is the one source
+   the copies are taken from.
+
+   TWO EXTENSIONS beyond what the deck shows, both for small text:
+   --teal-ink and --pink-ink are darker twins of the brand teal and pink. The
+   brand values are fine for titles, fills and shapes (as the deck uses them) but
+   fall below readable contrast as small body text on white.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* brand */
+  --navy: #0C173B;
+  --teal: #00B7B5;
+  --pink: #ED186B;
+  --amber: #FFC550;          /* connectors, pins, third-in-sequence — never a main colour */
+  --ink: #585858;            /* body text */
+
+  /* tints (card borders, fills, blobs) */
+  --teal-border: #E6F7F7;
+  --teal-fill: #F4FBFB;
+  --mint: #F3FBFB;
+  --pink-border: #FCE8F0;
+  --pink-fill: #FFF5F7;
+  --pink-head: #FCDCE8;
+  --amber-fill: #FFF6DD;     /* derived from the amber, for flag callouts */
+
+  /* small-text twins (extension — see header) */
+  --teal-ink: #007F7D;
+  --pink-ink: #C70F58;
+  --amber-ink: #8A5B00;
+
+  --radius: 20px;
+  --radius-sm: 12px;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.save7-look {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+}
+
+/* ---- the two backdrop blobs: pale mint top-right, pale pink bottom-left ---- */
+.save7-look::before,
+.save7-look::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.save7-look::before { top: -22vw; right: -16vw; width: 52vw; height: 52vw; background: var(--mint); }
+.save7-look::after  { bottom: -20vw; left: -12vw; width: 38vw; height: 38vw; background: var(--pink-fill); }
+
+/* ---- the two-circle motif: big teal, smaller pink, overlapping ---- */
+.circles { position: relative; width: 104px; height: 96px; flex: none; }
+.circles::before,
+.circles::after { content: ''; position: absolute; border-radius: 50%; }
+.circles::before { top: 0; right: 0; width: 72px; height: 72px; background: var(--teal); }
+.circles::after  { bottom: 0; left: 6px; width: 44px; height: 44px; background: var(--pink); }
+
+/* ---- type ---- */
+.eyebrow { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: var(--pink-ink); }
+.eyebrow.teal { color: var(--teal-ink); }
+.title { margin: 0; font-weight: 700; color: var(--navy); line-height: 1.15; letter-spacing: -0.01em; }
+.title .dot { color: var(--pink); }
+.title .accent { color: var(--teal); }
+h1.title { font-size: 40px; }
+h2.title { font-size: 26px; }
+h3.title { font-size: 18px; }
+.lede { color: var(--ink); font-size: 15px; max-width: 70ch; }
+.strong { font-weight: 700; color: var(--navy); }
+.muted { color: #8a8a8a; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ---- cards: white, large radius, hairline tinted border; alternate teal/pink ---- */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.card.pink { border-color: var(--pink-border); }
+.card.tint-teal { background: var(--teal-fill); }
+.card.tint-pink { background: var(--pink-fill); }
+.card-label { margin: 0 0 10px; font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ---- number pills ("01", "BARRIER 01") ---- */
+.num {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.num.pink { background: var(--pink); }
+.num.amber { background: var(--amber); color: var(--navy); }
+
+/* ---- buttons: outlined teal pill; pink for the primary ---- */
+.btn {
+  font: 600 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--teal-fill); }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+.btn.primary:hover { background: #d4125d; }
+.btn.quiet { border-color: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--teal-fill); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* ---- status chips: small, pale ---- */
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-border);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+.chip.pink { background: var(--pink-border); color: var(--pink-ink); }
+.chip.amber { background: #FFEFC2; color: var(--amber-ink); }
+.chip.grey { background: #F1F1F3; color: #666; }
+
+/* ---- tabs: pill row, active in pink ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 600 13px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--teal-fill); }
+.tab[aria-selected="true"] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+
+/* ---- form controls ---- */
+input[type="text"], select {
+  font: 500 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+input[type="text"]::placeholder { color: #a5a5a5; }
+
+/* ---- labelled field rows ---- */
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.fields dt { font-weight: 600; font-size: 12px; color: #8a8a8a; align-self: center; }
+.fields dd { margin: 0; color: var(--navy); font-weight: 600; }
+
+/* ---- timeline bar: alternating teal and pink segments, amber pin on the current one ---- */
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.bar > i { flex: 1; background: var(--teal); }
+.bar > i:nth-child(even) { background: var(--pink); }
+.bar > i.todo { opacity: 0.22; }
+
+/* ---- callout: amber, for open questions the user should react to ---- */
+.flag {
+  background: var(--amber-fill);
+  border: 1.5px solid #FFE7A8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #5a4300;
+}
+.flag b { color: var(--amber-ink); }
+
+/* ---- logo ---- */
+.logo { display: block; height: 22px; width: auto; }
+
+
+/* ---- page layout (prototype only) ---- */
+.wrap { max-width: 1360px; margin: 0 auto; padding: 28px 20px 120px; }
+header.top { display: flex; gap: 22px; align-items: center; margin-bottom: 14px; }
+header.top .logo { height: 26px; margin-bottom: 10px; }
+.proto-tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--amber-ink); background: var(--amber-fill); border-radius: 999px; padding: 2px 10px; }
+.intro { display: grid; gap: 8px; margin-bottom: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center; margin-bottom: 16px; }
+.controls .lab { font-size: 12px; font-weight: 600; color: #8a8a8a; margin-right: 6px; }
+
+/* ---- the screen: Shell + page ---- */
+.screen { border: 1.5px solid var(--teal-border); border-radius: var(--radius); background: #fff; overflow: hidden; display: grid; grid-template-columns: 250px minmax(0,1fr); min-height: 640px; }
+@media (max-width: 760px) { .screen { grid-template-columns: 1fr; } .shell { border-right: 0; border-bottom: 1.5px solid var(--teal-border); } }
+.shell { background: #fff; border-right: 1.5px solid var(--teal-border); padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; }
+.shell .who { margin: 0 6px 12px; padding: 10px 12px; border: 1.5px dashed #e3e3e8; border-radius: var(--radius-sm); font-size: 12px; color: #8a8a8a; }
+.shell .who b { display: block; color: var(--navy); font-size: 13px; }
+.nav-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font: 600 13px var(--font); color: var(--navy); background: none; border: 0; border-radius: 10px; padding: 7px 10px; cursor: pointer; }
+.nav-item:hover { background: var(--teal-fill); }
+.nav-item.active { background: var(--pink-fill); color: var(--pink-ink); }
+.nav-item.dim { color: #a5a5a5; cursor: default; }
+.nav-item.dim:hover { background: none; }
+.nav-item.l2 { padding-left: 26px; font-weight: 500; }
+.nav-item.l3 { padding-left: 44px; font-weight: 500; font-size: 12.5px; }
+.nav-item .chip { margin-left: auto; font-size: 10px; padding: 1px 7px; }
+.nav-sep { height: 1px; background: var(--teal-border); margin: 8px 6px; }
+
+.panes { display: grid; grid-template-columns: minmax(0,1fr); }
+.panes.both { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+.panes.both > .page + .page { border-left: 1.5px dashed #e3e3e8; }
+@media (max-width: 1100px) { .panes.both { grid-template-columns: 1fr; } .panes.both > .page + .page { border-left: 0; border-top: 1.5px dashed #e3e3e8; } }
+.page { padding: 22px 24px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.page .crumbs { font-size: 12px; color: #8a8a8a; }
+.pane-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9a9a9a; }
+
+/* ---- shared bits ---- */
+table.t { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+table.t th { text-align: left; font-weight: 600; font-size: 11px; color: #8a8a8a; padding: 6px 10px; border-bottom: 1.5px solid var(--teal-border); white-space: nowrap; }
+table.t td { padding: 9px 10px; border-bottom: 1px solid #f1f1f3; color: var(--navy); vertical-align: middle; }
+table.t tr.pending td { background: var(--amber-fill); }
+table.t tr.off td { color: #a5a5a5; }
+.nm { font-weight: 600; }
+.sub { font-size: 11.5px; color: #8a8a8a; font-weight: 500; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); }
+.row:nth-child(even) { border-color: var(--pink-border); }
+.row .name { font-weight: 600; color: var(--navy); }
+.rows { display: grid; gap: 8px; }
+.acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.acts .btn { padding: 4px 11px; font-size: 12px; }
+.switch { position: relative; width: 34px; height: 20px; border-radius: 999px; background: #d9d9de; border: 0; cursor: pointer; flex: none; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .12s; }
+.switch.on { background: var(--teal); }
+.switch.on::after { left: 17px; }
+.switch:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.cols2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+@media (max-width: 900px) { .cols2, .cols3 { grid-template-columns: 1fr; } }
+.kv { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 5px 0; border-bottom: 1px solid #f4f4f6; }
+.kv:last-child { border-bottom: 0; }
+.kv b { color: var(--navy); font-weight: 600; }
+.prog { height: 6px; background: #eef0f2; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.prog > i { display: block; height: 100%; background: var(--teal); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.filters .tab { padding: 4px 11px; font-size: 12px; }
+.report { font-size: 12.5px; color: var(--ink); border-left: 3px solid var(--teal); padding: 2px 0 2px 12px; }
+.empty { font-size: 12.5px; color: #9a9a9a; padding: 10px 0; }
+.count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 11px; font-weight: 700; }
+
+/* ---- variant B: one sheet ---- */
+.sheet { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 20px; }
+.sheet .rail { position: sticky; top: 12px; align-self: start; display: grid; gap: 2px; }
+.sheet .rail a { font-size: 12.5px; font-weight: 600; color: var(--navy); text-decoration: none; padding: 5px 10px; border-radius: 8px; display: flex; justify-content: space-between; }
+.sheet .rail a:hover { background: var(--teal-fill); }
+.sheet section { display: grid; gap: 10px; scroll-margin-top: 10px; }
+.sheet h3.title { display: flex; align-items: center; gap: 10px; }
+.band { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.band .cell { background: var(--teal-fill); border-radius: var(--radius-sm); padding: 10px 12px; }
+.band .cell:nth-child(even) { background: var(--pink-fill); }
+.band .big { font-size: 22px; font-weight: 700; color: var(--navy); line-height: 1.1; }
+@media (max-width: 760px) { .sheet { grid-template-columns: 1fr; } .sheet .rail { position: static; display: flex; flex-wrap: wrap; } .band { grid-template-columns: 1fr 1fr; } }
+
+/* ---- variant C: the roster is the hub ---- */
+.crow { display: grid; grid-template-columns: minmax(0,1fr) 280px; gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .crow { grid-template-columns: 1fr; } }
+.strip { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 12.5px; padding: 10px 14px; background: var(--teal-fill); border-radius: var(--radius-sm); }
+.strip b { color: var(--navy); }
+.mou-tag { font-size: 10.5px; font-weight: 700; color: var(--pink-ink); background: var(--pink-border); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+
+/* ---- dashboard ---- */
+.dcard { border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 8px; }
+.dcard.duty { border-color: var(--pink); background: var(--pink-fill); }
+.dcard .h { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; color: var(--navy); font-size: 13px; }
+.mini { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; padding: 6px 0; border-top: 1px solid #fbe3ec; }
+
+/* ---- state & switcher ---- */
+.state { margin-top: 18px; }
+.state pre { margin: 0; font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; color: var(--navy); background: #fafafb; border-radius: var(--radius-sm); padding: 12px 14px; max-height: 260px; overflow: auto; }
+.log { font-size: 12px; color: var(--teal-ink); margin-bottom: 8px; }
+.switcher { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 6px; background: #111; color: #fff; border-radius: 999px; padding: 6px 8px; box-shadow: 0 8px 28px rgba(0,0,0,.28); font: 600 13px system-ui, sans-serif; }
+.switcher button { background: #2a2a2a; color: #fff; border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; }
+.switcher button:hover { background: #3a3a3a; }
+.switcher .lbl { padding: 0 12px; min-width: 230px; text-align: center; }
+
+/* ---- Finance Hub prototype additions ---- */
+.hubtitle { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hubtitle h2 { margin: 0; font-size: 22px; color: var(--navy); }
+.tabrow { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1.5px solid var(--teal-border); padding-bottom: 6px; }
+.tabrow .tab { font-size: 12.5px; padding: 5px 12px; }
+.money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.money, th.money { text-align: right; }
+.in { color: var(--teal-ink); }
+.sits { font-size: 11.5px; font-weight: 600; color: var(--pink-ink); white-space: nowrap; }
+.sits.you { background: var(--pink); color: #fff; border-radius: 999px; padding: 1px 8px; }
+.lock { font-size: 12px; color: #8a8a8a; background: #fafafb; border: 1.5px dashed #e3e3e8; border-radius: var(--radius-sm); padding: 8px 12px; }
+.scope { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 12px; background: var(--teal-fill); border-radius: var(--radius-sm); }
+.scope .tab { font-size: 12.5px; padding: 5px 12px; background: #fff; }
+.scope .tab.locked { color: #9a9a9a; }
+.sec { display: grid; gap: 10px; }
+.sec h3 { margin: 0; font-size: 15px; color: var(--navy); display: flex; gap: 8px; align-items: center; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.col { background: #fafafb; border-radius: var(--radius-sm); padding: 10px; display: grid; gap: 8px; align-content: start; min-height: 180px; }
+.col h4 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8a8a8a; display: flex; justify-content: space-between; }
+.ccard { background: #fff; border: 1.5px solid var(--teal-border); border-radius: 10px; padding: 8px 10px; display: grid; gap: 5px; font-size: 12.5px; }
+.ccard.mine { border-color: var(--pink); }
+.ccard .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; color: var(--navy); }
+.split { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .board { grid-template-columns: 1fr 1fr; } .split { grid-template-columns: 1fr; } }
+.gauge { display: grid; gap: 3px; font-size: 12.5px; padding: 5px 0; }
+.gauge .line { display: flex; justify-content: space-between; gap: 8px; }
+.gauge .prog { position: relative; }
+.gauge .prog .pace { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--amber); }
+.drawer { display: flex; flex-wrap: wrap; gap: 8px; }
+.drawer .btn { font-size: 12.5px; }
+.qa { font-size: 12px; background: var(--amber-fill); border-radius: 8px; padding: 6px 9px; color: #5a4300; }
+</style>
+</head>
+<body class="save7-look">
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <img class="logo" src="data:image/png;base64,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" alt="Save7">
+    <p class="eyebrow">Ticket #61 · <span class="proto-tag">PROTOTYPE — THROWAWAY</span></p>
+    <h1 class="title">The Finance Hub<span class="dot">.</span></h1>
+  </div>
+  <div class="circles" aria-hidden="true"></div>
+</header>
+
+<section class="intro">
+  <p class="lede"><b class="strong">The question.</b> What does the Finance Hub look like once Save7 OS's finance build is re-seated on the target model? The books are Gilbert's and carry across whole. What changes is who opens which page and who may press which button. A branch Finance Manager decides their branch's Claims, Exco pays them, the General Liaison only reads, and a Volunteer reaches just <b class="strong">Your money</b>.</p>
+  <p class="lede">Flip the three layouts with the bar at the bottom or the ← → keys. Switch the seat to see how each layout holds up for that seat. Every button is a stub that changes the state at the bottom, so you can follow a Claim from lodged to paid. Amber boxes are open questions, not answers.</p>
+</section>
+
+<div class="controls">
+  <div><span class="lab">Seat</span><span class="tabs" id="seatTabs"></span></div>
+</div>
+
+<div class="screen">
+  <nav class="shell" id="shell"></nav>
+  <div class="panes" id="panes"></div>
+</div>
+
+<section class="state card pink">
+  <p class="card-label">State <span class="muted" style="font-weight:500;font-size:12px">— everything in memory, shown after every change</span></p>
+  <div class="log" id="log">Nothing pressed yet.</div>
+  <pre id="state"></pre>
+</section>
+
+</div>
+
+<div class="switcher" role="group" aria-label="Prototype variant switcher">
+  <button id="prev" aria-label="Previous variant">←</button>
+  <span class="lbl" id="vlabel"></span>
+  <button id="next" aria-label="Next variant">→</button>
+</div>
+
+<script>
+/* ===================== DATA (fake) ===================== */
+const MYBRANCH = 'Wits';
+const SEATS = {
+  cfo: { key: 'cfo', seat: 'CFO', name: 'Priya Naidoo', where: 'National Exco', cosign: true },
+  cgo: { key: 'cgo', seat: 'CGO', name: 'Michael Adeyemi', where: 'National Exco', cosign: false },
+  gl:  { key: 'gl',  seat: 'General Liaison', name: 'Ruth Mabaso', where: 'National', cosign: false },
+  fm:  { key: 'fm',  seat: 'Finance Manager', name: 'Aisha Patel', where: 'Wits', cosign: false },
+  bm:  { key: 'bm',  seat: 'Branch Manager', name: 'Thandi Mokoena', where: 'Wits', cosign: false },
+  vol: { key: 'vol', seat: 'Volunteer', name: 'Megan van Wyk', where: 'Wits', cosign: false },
+};
+const FM_OF = { Wits: 'Aisha Patel', UP: 'Johan Smit', UJ: 'Naledi Mokoena', UCT: 'Ayesha Davids', Stellenbosch: 'Pieter Louw' };
+const BRANCHES = Object.keys(FM_OF);
+const COSIGNATORIES = ['Gugu Sithole (CEO)', 'Sizwe Khoza (COO)', 'Priya Naidoo (CFO)', 'Kagiso Molefe (former CMO, on the mandate)'];
+const S = {
+  rate: 4.18,
+  claims: [
+    { id: 'c1', kind: 'Fuel', who: 'Sipho Ndlovu', branch: 'Wits', project: 'Wits Swab Week', what: 'Hospital run, Charlotte Maxeke and back', km: 84, rate: 4.18, status: 'Pending', lodged: '21 Nov' },
+    { id: 'c2', kind: 'Spend', who: 'Megan van Wyk', branch: 'Wits', project: null, what: 'Printing: stall flyers (receipt attached)', amount: 420, status: 'Queried', lodged: '17 Nov', query: 'Which Event were these for? Two stalls ran that week.' },
+    { id: 'c3', kind: 'Fuel', who: 'Nomvula Zulu', branch: 'Wits', project: null, what: 'Library Lawn stall setup', km: 36, rate: 4.18, status: 'Approved', lodged: '12 Nov' },
+    { id: 'c4', kind: 'Fuel', who: 'Aisha Patel', branch: 'Wits', project: null, what: 'Bank visit, branch deposit', km: 60, rate: 4.18, status: 'Pending', lodged: '20 Nov' },
+    { id: 'c5', kind: 'Spend', who: 'Tshepo Mahlangu', branch: 'Wits', project: 'Res Drive: Knockando', what: 'Banners for residence drive', amount: 1150, status: 'Paid', lodged: '28 Oct' },
+    { id: 'c6', kind: 'Fuel', who: 'Lindiwe Dube', branch: 'UP', project: null, what: 'Steve Biko Hospital drive', km: 52, rate: 3.95, status: 'Pending', lodged: '19 Nov' },
+    { id: 'c7', kind: 'Spend', who: 'Kyle Jacobs', branch: 'UP', project: null, what: 'Refreshments, donor evening', amount: 780, status: 'Approved', lodged: '10 Nov' },
+    { id: 'c8', kind: 'Spend', who: 'Lebo Mashaba', branch: null, project: 'National Donor Database', what: 'Domain renewal', amount: 300, status: 'Pending', lodged: '22 Nov' },
+    { id: 'c9', kind: 'Fuel', who: 'Megan van Wyk', branch: 'Wits', project: null, what: 'Donor-registration drive, Matrix', km: 22, rate: 4.18, status: 'Pending', lodged: '23 Nov' },
+  ],
+  ledger: [
+    { id: 'l1', date: '23 Nov', desc: 'Donation: Mahlangu Family Trust (18A requested)', branch: null, cat: 'Donations', inn: 15000, out: 0, source: 'Manual' },
+    { id: 'l2', date: '20 Nov', desc: 'Venue deposit: Gala 2027, Sandton', branch: null, cat: 'Events', inn: 0, out: 12500, source: 'Manual payment', sigs: ['Priya Naidoo (CFO)'] },
+    { id: 'l3', date: '18 Nov', desc: 'Claim paid: Tshepo Mahlangu, banners', branch: 'Wits', cat: 'Printing', inn: 0, out: 1150, source: 'Claim c5' },
+    { id: 'l4', date: '15 Nov', desc: 'Transfer: savings → current', branch: null, cat: 'Transfer', inn: 0, out: 0, source: 'Transfer', transfer: 20000 },
+    { id: 'l5', date: '12 Nov', desc: 'Stall takings: Library Lawns', branch: 'Wits', cat: 'Fundraising', inn: 2340, out: 0, source: 'Manual' },
+    { id: 'l6', date: '09 Nov', desc: 'Claude seats, November', branch: null, cat: 'Software', inn: 0, out: 1900, source: 'Manual' },
+    { id: 'l7', date: '05 Nov', desc: 'Claim paid: UP refreshments (Oct)', branch: 'UP', cat: 'Events', inn: 0, out: 640, source: 'Claim' },
+  ],
+  cash: 184230,
+  budgets: [
+    { target: 'Wits', scope: 'Branch', amount: 24000, spent: 15980 },
+    { target: 'UP', scope: 'Branch', amount: 18000, spent: 16420 },
+    { target: 'UJ', scope: 'Branch', amount: 15000, spent: 6100 },
+    { target: 'UCT', scope: 'Branch', amount: 20000, spent: 11300 },
+    { target: 'Stellenbosch', scope: 'Branch', amount: 12000, spent: 3050 },
+    { target: 'Fuel', scope: 'Category', amount: 30000, spent: 18200 },
+    { target: 'Printing', scope: 'Category', amount: 8000, spent: 5900 },
+    { target: 'Events', scope: 'Category', amount: 25000, spent: 14000 },
+  ],
+  byCat: { Wits: { Fuel: 7210, Printing: 4120, Events: 3100, Other: 1550 }, UP: { Fuel: 6900, Printing: 2200, Events: 6820, Other: 500 }, UJ: { Fuel: 3400, Printing: 900, Events: 1500, Other: 300 }, UCT: { Fuel: 4800, Printing: 2100, Events: 3900, Other: 500 }, Stellenbosch: { Fuel: 1900, Printing: 600, Events: 550, Other: 0 } },
+  plans: [
+    { id: 'p1', project: 'Wits Swab Week', lead: 'Sipho Ndlovu', home: 'Wits', total: 6800, status: 'Awaiting review', submitted: '19 Nov', spent: 0 },
+    { id: 'p2', project: 'National Donor Database', lead: 'Lebo Mashaba', home: null, total: 12000, status: 'Awaiting review', submitted: '14 Nov', spent: 300 },
+    { id: 'p3', project: 'Res Drive: Knockando', lead: 'Tshepo Mahlangu', home: 'Wits', total: 2400, status: 'Accepted', submitted: '2 Jul', spent: 1150 },
+  ],
+  seats: [
+    { who: 'Megan van Wyk', branch: 'Wits', monthly: 380, funded: false, overdue: 3 },
+    { who: 'Lebo Mashaba', branch: null, monthly: 380, funded: true, overdue: 0 },
+    { who: 'Sipho Ndlovu', branch: 'Wits', monthly: 380, funded: false, overdue: 0 },
+    { who: 'Johan Smit', branch: 'UP', monthly: 380, funded: false, overdue: 1 },
+  ],
+  s18a: [
+    { no: '18A-2026-0141', donor: 'Mahlangu Family Trust', amount: 15000, state: 'Outstanding' },
+    { no: '—', donor: 'R. Govender', amount: 2500, state: 'Outstanding' },
+    { no: '—', donor: 'Anonymous via SnapScan', amount: 800, state: 'Outstanding' },
+    { no: '18A-2026-0139', donor: 'Wits Medical Students Council', amount: 5000, state: 'Recorded' },
+    { no: '—', donor: 'Bake sale, cash', amount: 640, state: 'Waived: no donor details' },
+  ],
+  vault: [
+    { file: 'receipt-flyers-megan.jpg', link: 'Claim c2', branch: 'Wits' },
+    { file: 'banners-invoice.pdf', link: 'Claim c5', branch: 'Wits' },
+    { file: 'gala-venue-quote.pdf', link: 'Ledger l2', branch: null },
+    { file: 'up-refreshments.jpg', link: 'Claim c7', branch: 'UP' },
+  ],
+};
+let log = [];
+
+/* ===================== URL STATE ===================== */
+const VARIANTS = [
+  { key: 'A', name: 'Tabs: Save7 OS\'s pages, gated by seat' },
+  { key: 'B', name: 'Scope lens: pick the books you\'re looking at' },
+  { key: 'C', name: 'The Claim flow is the hub' },
+];
+const qs = new URLSearchParams(location.search);
+let variant = VARIANTS.some(v => v.key === qs.get('variant')) ? qs.get('variant') : 'A';
+let seat = SEATS[qs.get('seat')] ? qs.get('seat') : 'cfo';
+let page = qs.get('page') || null;
+let scope = qs.get('scope') || null;
+let drawer = null;
+
+function pushUrl() {
+  const p = new URLSearchParams({ variant, seat });
+  if (variant === 'A' && page) p.set('page', page);
+  if (variant === 'B' && scope) p.set('scope', scope);
+  try { history.replaceState(null, '', '?' + p.toString()); } catch (e) { /* opened from a data: URL */ }
+}
+
+/* ===================== WHO MAY DO WHAT (from #7) ===================== */
+const me = () => SEATS[seat];
+const isExco = () => seat === 'cfo' || seat === 'cgo';
+const isNational = () => isExco() || seat === 'gl';
+const isBranchSeat = () => seat === 'fm' || seat === 'bm';
+const amt = c => c.kind === 'Fuel' ? Math.round(c.km * c.rate) : c.amount;
+const seesClaim = c => isNational() || (isBranchSeat() && c.branch === MYBRANCH);
+const canDecide = c => c.status === 'Pending' && c.who !== me().name && (isExco() || (seat === 'fm' && c.branch === MYBRANCH));
+const canPay = c => c.status === 'Approved' && isExco();
+function sitsWith(c) {
+  if (c.status === 'Queried') return c.who + ' (to answer)';
+  if (c.status === 'Pending') return (!c.branch || FM_OF[c.branch] === c.who) ? 'CFO' : FM_OF[c.branch] + ' (FM)';
+  if (c.status === 'Approved') return 'CFO (to pay)';
+  return '—';
+}
+const sitsYou = c => {
+  const s = sitsWith(c);
+  return (seat === 'cfo' && s.startsWith('CFO')) || s.startsWith(me().name);
+};
+// Pages: who reads each one. Amber where #7 left it implicit.
+const PAGES = [
+  { id: 'overview', name: 'Overview', reads: () => isNational() || isBranchSeat() },
+  { id: 'tracker', name: 'Financial tracker', reads: () => isNational() || isBranchSeat() },
+  { id: 'fuel', name: 'Fuel claims', reads: () => isNational() || isBranchSeat() },
+  { id: 'spend', name: 'Branch spend', reads: () => isNational() || isBranchSeat() },
+  { id: 'budgets', name: 'Budgets & plans', reads: () => isNational() || isBranchSeat() },
+  { id: 'claude', name: 'Claude seats', reads: () => isNational() },
+  { id: 's18a', name: 'Section 18A', reads: () => isNational() },
+  { id: 'vault', name: 'Receipt vault', reads: () => isNational() },
+  { id: 'settings', name: 'Settings', reads: () => isNational() },
+  { id: 'yours', name: 'Your money', reads: () => true },
+];
+const readable = () => PAGES.filter(p => p.reads());
+
+/* ===================== ACTIONS (stubs) ===================== */
+const who = () => me().name + ' (' + me().seat + ')';
+const R = n => 'R' + Number(n).toLocaleString('en-ZA');
+function decide(id, verdict) {
+  const c = S.claims.find(x => x.id === id); if (!c || !canDecide(c)) return;
+  if (verdict === 'Queried') { c.query = prompt('Your question to ' + c.who + ':', 'Which Event was this for?') || 'Please add detail.'; }
+  c.status = verdict;
+  log.unshift(who() + ' ' + verdict.toLowerCase() + ' ' + c.who + '\'s ' + c.kind.toLowerCase() + ' claim (' + R(amt(c)) + ').');
+  render();
+}
+function pay(id) {
+  const c = S.claims.find(x => x.id === id); if (!c || !canPay(c)) return;
+  c.status = 'Paid';
+  S.ledger.unshift({ id: 'l' + Date.now(), date: '24 Nov', desc: 'Claim paid: ' + c.who + ', ' + c.what, branch: c.branch, cat: c.kind === 'Fuel' ? 'Fuel' : 'Other', inn: 0, out: amt(c), source: 'Claim ' + c.id });
+  S.cash -= amt(c);
+  log.unshift(who() + ' marked ' + c.who + '\'s claim paid; ' + R(amt(c)) + ' posted to the ledger.');
+  render();
+}
+function answerQuery(id) {
+  const c = S.claims.find(x => x.id === id); if (!c || c.who !== me().name) return;
+  c.answer = prompt('Your answer to the Finance Manager:', 'The Library Lawn stall on 12 Nov.') || '—';
+  c.status = 'Pending';
+  log.unshift(who() + ' answered the query; the claim is back with ' + FM_OF[c.branch] + '.');
+  render();
+}
+function withdraw(id) {
+  const c = S.claims.find(x => x.id === id); if (!c || c.who !== me().name || c.status !== 'Pending') return;
+  S.claims = S.claims.filter(x => x !== c);
+  log.unshift(who() + ' withdrew their pending claim.');
+  render();
+}
+function cosign(id) {
+  const l = S.ledger.find(x => x.id === id); const tag = COSIGNATORIES.find(s => s.startsWith(me().name));
+  if (!l || !tag || l.sigs.includes(tag)) return;
+  l.sigs.push(tag);
+  log.unshift(who() + ' co-signed "' + l.desc + '" (' + l.sigs.length + ' of 2).');
+  render();
+}
+function review(id, verdict) {
+  const p = S.plans.find(x => x.id === id); if (!p) return;
+  p.status = verdict === 'Accepted' ? 'Accepted' : 'Returned';
+  if (verdict !== 'Accepted') p.reason = prompt('Reason for returning it to ' + p.lead + ':', 'Line 4 (venue) needs a quote.') || '—';
+  log.unshift(who() + ' ' + (verdict === 'Accepted' ? 'accepted' : 'returned') + ' the budget plan for ' + p.project + '.');
+  render();
+}
+function lodge() {
+  S.claims.push({ id: 'c' + Date.now(), kind: 'Fuel', who: me().name, branch: me().where === 'National Exco' || me().where === 'National' ? null : me().where, project: null, what: 'New trip (stub)', km: 30, rate: S.rate, status: 'Pending', lodged: '24 Nov' });
+  log.unshift(who() + ' lodged a fuel claim for 30 km at the current rate.');
+  render();
+}
+function stub(what) { log.unshift(who() + ' pressed "' + what + '" (stub: nothing saved).'); render(); }
+Object.assign(window, { decide, pay, answerQuery, withdraw, cosign, review, lodge, stub });
+
+/* ===================== PIECES ===================== */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const flag = html => '<div class="flag">' + html + '</div>';
+const lock = html => '<div class="lock">' + html + '</div>';
+const statusChip = s => ({ Pending: '<span class="chip amber">Pending</span>', Queried: '<span class="chip pink">Queried</span>', Approved: '<span class="chip">Approved</span>', Paid: '<span class="chip grey">Paid</span>', Rejected: '<span class="chip grey">Rejected</span>' }[s]);
+const branchLbl = b => b || '<span class="sub">Organisation</span>';
+const sitsCell = c => { const s = sitsWith(c); return s === '—' ? '<span class="sub">—</span>' : '<span class="sits' + (sitsYou(c) ? ' you' : '') + '">' + esc(s) + '</span>'; };
+function claimActs(c) {
+  const b = [];
+  if (canDecide(c)) b.push('<button class="btn" onclick="decide(\'' + c.id + '\',\'Queried\')">Query</button><button class="btn" onclick="decide(\'' + c.id + '\',\'Rejected\')">Reject</button><button class="btn primary" onclick="decide(\'' + c.id + '\',\'Approved\')">Approve</button>');
+  else if (c.status === 'Pending' && c.who === me().name && isBranchSeat()) b.push('<span class="sub">Your own: goes to the CFO</span>');
+  if (canPay(c)) b.push('<button class="btn primary" onclick="pay(\'' + c.id + '\')">Mark paid</button>');
+  if (c.status === 'Approved' && seat === 'fm' && c.branch === MYBRANCH) b.push('<span class="sub">Exco pays</span>');
+  return '<div class="acts">' + b.join('') + '</div>';
+}
+function claimsTable(kind, list) {
+  const rows = list.filter(c => !kind || c.kind === kind);
+  if (!rows.length) return '<div class="empty">Nothing here.</div>';
+  return '<table class="t"><thead><tr><th>Lodged</th><th>Claimant</th><th>Branch</th><th>For</th>' + (kind === 'Fuel' ? '<th class="money">km × rate</th>' : '') + '<th class="money">Amount</th><th>State</th><th>Sits with</th><th></th></tr></thead><tbody>' +
+    rows.map(c => '<tr class="' + (c.status === 'Pending' ? 'pending' : c.status === 'Paid' || c.status === 'Rejected' ? 'off' : '') + '"><td>' + c.lodged + '</td><td class="nm">' + esc(c.who) + '</td><td>' + branchLbl(c.branch) + '</td><td>' + esc(c.what) + (c.project ? '<div class="sub">Project: ' + esc(c.project) + '</div>' : '') + (c.query && c.status === 'Queried' ? '<div class="qa">Query: ' + esc(c.query) + '</div>' : '') + (c.answer ? '<div class="sub">Answer: ' + esc(c.answer) + '</div>' : '') + '</td>' +
+      (kind === 'Fuel' ? '<td class="money">' + c.km + ' × R' + c.rate.toFixed(2) + '</td>' : '') + '<td class="money">' + R(amt(c)) + '</td><td>' + statusChip(c.status) + '</td><td>' + sitsCell(c) + '</td><td>' + claimActs(c) + '</td></tr>').join('') + '</tbody></table>';
+}
+const visibleClaims = () => S.claims.filter(seesClaim);
+function othersNote() {
+  return isBranchSeat() ? lock('Other branches\' Claims stay inside their branch. You see their totals on Overview and Budgets, never a named person and an amount.') : '';
+}
+function ledgerTable(onlyBranch) {
+  let rows = S.ledger;
+  if (isBranchSeat()) rows = rows.filter(l => l.branch === MYBRANCH);
+  if (onlyBranch !== undefined) rows = rows.filter(l => l.branch === onlyBranch);
+  return '<table class="t"><thead><tr><th>Date</th><th>Line</th><th>Branch</th><th>Category</th><th class="money">In</th><th class="money">Out</th><th>Source</th></tr></thead><tbody>' +
+    rows.map(l => {
+      let src = esc(l.source);
+      if (l.sigs) {
+        const tag = COSIGNATORIES.find(s => s.startsWith(me().name));
+        const signBtn = tag && !l.sigs.includes(tag) && l.sigs.length < 2 ? ' <button class="btn primary" style="padding:3px 10px;font-size:11.5px" onclick="cosign(\'' + l.id + '\')">Co-sign</button>' : '';
+        src += '<div>' + (l.sigs.length < 2 ? '<span class="chip pink">' + l.sigs.length + ' of 2 signatures</span>' : '<span class="chip">Signed twice</span>') + signBtn + '</div>' +
+          (l.sigs.length < 2 && isExco() && !tag ? '<div class="sub">You are not on the bank mandate</div>' : '') + '<div class="sub">' + l.sigs.map(esc).join(', ') + '</div>';
+      }
+      return '<tr><td>' + l.date + '</td><td class="nm">' + esc(l.desc) + '</td><td>' + branchLbl(l.branch) + '</td><td>' + l.cat + '</td><td class="money in">' + (l.inn ? R(l.inn) : (l.transfer ? '<span class="sub">transfer ' + R(l.transfer) + '</span>' : '')) + '</td><td class="money">' + (l.out ? R(l.out) : '') + '</td><td>' + src + '</td></tr>';
+    }).join('') + '</tbody></table>' + (isBranchSeat() ? '<div class="sub" style="margin-top:6px">Wits lines only. The organisation\'s own lines and other branches\' lines are not shown to a branch seat.</div>' : '');
+}
+const ELAPSED = 0.73; // 1 Mar 2026 → 24 Nov 2026 of the March–February year
+function gauge(b, linkTo) {
+  const pct = Math.round(b.spent / b.amount * 100);
+  return '<div class="gauge"><div class="line"><b>' + esc(b.target) + '</b><span class="money">' + R(b.spent) + ' of ' + R(b.amount) + ' · ' + pct + '%</span></div><div class="prog"><i style="width:' + Math.min(pct, 100) + '%"></i><span class="pace" style="left:' + ELAPSED * 100 + '%"></span></div></div>';
+}
+function budgetsBlock() {
+  let br = S.budgets.filter(b => b.scope === 'Branch');
+  const cat = S.budgets.filter(b => b.scope === 'Category');
+  let h = '<div class="cols2"><div class="card"><p class="card-label">Branch Budgets · FY Mar 2026 – Feb 2027</p>' + br.map(b => gauge(b)).join('') + '<div class="sub" style="margin-top:6px">Amber tick: 73% of the year gone. A figure over its Budget shows; nothing is blocked and nothing goes red.</div></div>';
+  h += '<div class="card pink"><p class="card-label">Category Budgets</p>' + (isNational() ? cat.map(b => gauge(b)).join('') : cat.map(b => gauge(b)).join('') + '<div class="sub">Read-only for you.</div>') + '</div></div>';
+  if (isExco()) h += '<div class="acts" style="justify-content:flex-start"><button class="btn" onclick="stub(\'Set a Budget\')">Set a Budget</button></div>';
+  return h;
+}
+function plansBlock() {
+  let rows = S.plans;
+  if (seat === 'bm') return lock('Budget plans are reviewed by the Finance Manager. A Branch Manager reads the branch Budget only.');
+  if (seat === 'fm') rows = rows.filter(p => p.home === MYBRANCH);
+  const mayReview = p => p.status === 'Awaiting review' && ((seat === 'fm' && p.home === MYBRANCH) || (isExco() && !p.home) || (isExco()));
+  return '<table class="t"><thead><tr><th>Project</th><th>Lead</th><th>Home</th><th class="money">Plan</th><th class="money">Spent</th><th>State</th><th>Reviewed by</th><th></th></tr></thead><tbody>' +
+    rows.map(p => '<tr class="' + (p.status === 'Awaiting review' ? 'pending' : '') + '"><td class="nm">' + esc(p.project) + '</td><td>' + esc(p.lead) + '</td><td>' + (p.home || '<span class="sub">none</span>') + '</td><td class="money">' + R(p.total) + '</td><td class="money">' + (p.status === 'Accepted' ? R(p.spent) : '<span class="sub">' + R(p.spent) + '</span>') + '</td><td>' + (p.status === 'Accepted' ? '<span class="chip">Accepted: the Project\'s budget</span>' : p.status === 'Returned' ? '<span class="chip pink">Returned</span><div class="sub">' + esc(p.reason) + '</div>' : '<span class="chip amber">Awaiting review</span>') + '</td><td><span class="sits' + ((seat === 'fm' && p.home === MYBRANCH) || (seat === 'cfo' && !p.home) ? ' you' : '') + '">' + (p.home ? FM_OF[p.home] + ' (FM)' : 'CFO') + '</span></td><td>' +
+      (mayReview(p) ? '<div class="acts"><button class="btn" onclick="review(\'' + p.id + '\',\'Returned\')">Return…</button><button class="btn primary" onclick="review(\'' + p.id + '\',\'Accepted\')">Accept</button></div>' : '') + '</td></tr>').join('') + '</tbody></table>';
+}
+function othersTotals() {
+  const others = BRANCHES.filter(b => !(isBranchSeat() && b === MYBRANCH));
+  return '<table class="t"><thead><tr><th>Branch</th><th class="money">Budget</th><th class="money">Spent</th><th class="money">Fuel</th><th class="money">Printing</th><th class="money">Events</th><th class="money">Other</th></tr></thead><tbody>' +
+    others.map(b => { const bu = S.budgets.find(x => x.target === b); const c = S.byCat[b]; return '<tr><td class="nm">' + b + '</td><td class="money">' + R(bu.amount) + '</td><td class="money">' + R(bu.spent) + '</td><td class="money">' + R(c.Fuel) + '</td><td class="money">' + R(c.Printing) + '</td><td class="money">' + R(c.Events) + '</td><td class="money">' + R(c.Other) + '</td></tr>'; }).join('') + '</tbody></table>';
+}
+function overviewBand() {
+  const cl = visibleClaims();
+  const pend = cl.filter(c => c.status === 'Pending').length, toPay = cl.filter(c => c.status === 'Approved').length;
+  const cells = isBranchSeat()
+    ? [['Wits spent this year', R(S.budgets[0].spent)], ['of Wits Budget', '67%'], ['Wits Claims pending', pend], ['Approved, awaiting Exco', toPay]]
+    : [['Cash on hand', R(S.cash)], ['In · Nov', R(17340)], ['Out · Nov', R(16190)], ['Claims pending', pend]];
+  return '<div class="band">' + cells.map(([l, v]) => '<div class="cell"><div class="sub">' + l + '</div><div class="big">' + v + '</div></div>').join('') + '</div>';
+}
+function seatsTable() {
+  return '<table class="t"><thead><tr><th>Holder</th><th>Branch</th><th class="money">Monthly</th><th>Funding</th><th>Repayment</th></tr></thead><tbody>' +
+    S.seats.map(s => '<tr><td class="nm">' + esc(s.who) + '</td><td>' + branchLbl(s.branch) + '</td><td class="money">' + R(s.monthly) + '</td><td>' + (s.funded ? '<span class="chip">Org-funded: nothing recoverable</span>' : 'Recoverable') + '</td><td>' + (s.funded ? '—' : s.overdue >= 3 ? '<span class="chip pink">' + s.overdue + ' months overdue</span>' : s.overdue ? s.overdue + ' month behind' : 'Up to date') + '</td></tr>').join('') + '</tbody></table>';
+}
+function s18aBlock() {
+  return (seat === 'gl' ? flag('<b>Open question.</b> #7 gives the General Liaison read of the whole Finance Hub, and Save7 OS treats donors as the most sensitive data it holds. Does the General Liaison read the donor list here, or does Section 18A close to Exco?') : '') +
+    '<table class="t"><thead><tr><th>Certificate</th><th>Donor</th><th class="money">Amount</th><th>State</th><th></th></tr></thead><tbody>' +
+    S.s18a.map(x => '<tr class="' + (x.state === 'Outstanding' ? 'pending' : '') + '"><td>' + x.no + '</td><td class="nm">' + esc(x.donor) + '</td><td class="money">' + R(x.amount) + '</td><td>' + (x.state === 'Outstanding' ? '<span class="chip amber">Outstanding</span> <span class="sits' + (seat === 'cfo' ? ' you' : '') + '">CFO</span>' : esc(x.state)) + '</td><td>' + (isExco() && x.state === 'Outstanding' ? '<div class="acts"><button class="btn" onclick="stub(\'Waive with a reason\')">Waive…</button><button class="btn primary" onclick="stub(\'Record certificate\')">Record</button></div>' : '') + '</td></tr>').join('') + '</tbody></table>';
+}
+function vaultTable() { return '<table class="t"><thead><tr><th>File</th><th>Attached to</th><th>Branch</th></tr></thead><tbody>' + S.vault.map(v => '<tr><td class="nm">' + v.file + '</td><td>' + v.link + '</td><td>' + branchLbl(v.branch) + '</td></tr>').join('') + '</tbody></table>'; }
+function settingsBlock() {
+  const ro = !isExco();
+  return (ro ? '<div class="sub">You read the settings. Only National Exco change them.</div>' : '') + '<div class="cols2"><div class="card"><p class="card-label">The books</p>' +
+    [['Fuel rate', 'R' + S.rate.toFixed(2) + ' per km (frozen onto each claim when lodged)'], ['Financial year', 'March to February (the SARS tax year)'], ['Opening cash', R(142500) + ' on 1 Mar 2026'], ['Chart of accounts', '14 categories'], ['18A certificate issuer', 'Save7 NPC · PBO 930071234']].map(([k, v]) => '<div class="kv"><b>' + k + '</b><span>' + v + '</span></div>').join('') +
+    '</div><div class="card pink"><p class="card-label">Who may co-sign</p>' + COSIGNATORIES.map(c => '<div class="kv"><b>' + esc(c) + '</b>' + (ro ? '' : '<button class="btn quiet" style="padding:2px 8px;font-size:11.5px" onclick="stub(\'Withdraw co-signing\')">Withdraw</button>') + '</div>').join('') +
+    '<div class="sub" style="margin-top:6px">Held by the person, mirroring the bank mandate. Not by the seat.</div>' + (ro ? '' : '<div class="acts" style="justify-content:flex-start;margin-top:8px"><button class="btn" onclick="stub(\'Grant co-signing\')">Grant to a person…</button></div>') + '</div></div>';
+}
+function yourMoney(compact) {
+  const mine = S.claims.filter(c => c.who === me().name);
+  const seatRow = S.seats.find(s => s.who === me().name);
+  let h = '';
+  h += '<div class="card pink"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><p class="card-label" style="margin:0">Your Claims</p><div class="acts"><button class="btn" onclick="stub(\'Log Branch spend\')">Log spend + receipt</button><button class="btn primary" onclick="lodge()">Lodge a fuel claim</button></div></div>';
+  h += mine.length ? '<div class="rows">' + mine.map(c => '<div class="row"><div><div class="name">' + esc(c.what) + '</div><div class="sub">' + c.kind + ' · lodged ' + c.lodged + ' · ' + (c.status === 'Pending' ? 'with ' + (FM_OF[c.branch] === c.who || !c.branch ? 'the CFO' : FM_OF[c.branch] + ', your Finance Manager') : c.status === 'Approved' ? 'approved; Exco pays it' : c.status.toLowerCase()) + '</div>' + (c.status === 'Queried' ? '<div class="qa" style="margin-top:4px">' + esc(FM_OF[c.branch]) + ' asked: ' + esc(c.query) + '</div>' : '') + '</div><div class="acts"><span class="money nm">' + R(amt(c)) + '</span>' + statusChip(c.status) +
+      (c.status === 'Queried' ? '<button class="btn primary" onclick="answerQuery(\'' + c.id + '\')">Answer</button>' : '') + (c.status === 'Pending' ? '<button class="btn quiet" onclick="withdraw(\'' + c.id + '\')">Withdraw</button>' : '') + '</div></div>').join('') + '</div>' : '<div class="empty">You have no Claims.</div>';
+  h += '</div>';
+  if (!compact) {
+    h += '<div class="cols2"><div class="card"><p class="card-label">Your Claude seat</p>' + (seatRow ? '<div class="kv"><b>Monthly</b><span>' + R(seatRow.monthly) + '</span></div><div class="kv"><b>Repayment</b><span>' + (seatRow.overdue >= 3 ? '<span class="chip pink">' + seatRow.overdue + ' months overdue</span>' : 'Up to date') + '</span></div>' + (seatRow.overdue ? '<div class="acts" style="justify-content:flex-start;margin-top:8px"><button class="btn" onclick="stub(\'How to repay\')">How to repay</button></div>' : '') : '<div class="empty">No Claude seat.</div>') + '</div>' +
+      '<div class="card"><p class="card-label">Your documents</p><div class="kv"><b>receipt-flyers-megan.jpg</b><span class="sub">Claim, 17 Nov</span></div><div class="sub">Receipts you attached, and nothing of anyone else\'s.</div></div></div>';
+  }
+  return h;
+}
+
+/* ===================== VARIANT A: tabs ===================== */
+function pageBody(id) {
+  const cl = visibleClaims();
+  switch (id) {
+    case 'overview': return overviewBand() +
+      '<div class="cols2"><div class="card"><p class="card-label">Action queue</p>' + actionQueue() + '</div><div class="card pink"><p class="card-label">' + (isBranchSeat() ? 'Wits against its Budget' : 'Budgets at a glance') + '</p>' + (isBranchSeat() ? gauge(S.budgets[0]) : S.budgets.filter(b => b.scope === 'Branch').map(b => gauge(b)).join('')) + '</div></div>' +
+      (isBranchSeat() ? '<div class="card"><p class="card-label">Other branches · totals only</p>' + othersTotals() + '</div>' : '');
+    case 'tracker': return ledgerTable() + (isExco() ? '<div class="acts" style="justify-content:flex-start"><button class="btn" onclick="stub(\'Record income\')">Record income</button><button class="btn" onclick="stub(\'Manual outgoing payment\')">Manual outgoing payment</button><button class="btn" onclick="stub(\'Transfer\')">Transfer</button></div>' : '');
+    case 'fuel': return claimsTable('Fuel', cl) + '<div class="sub">Rate frozen onto each claim. UP\'s claim from before the rate change still reads R3.95.</div>' + othersNote();
+    case 'spend': return claimsTable('Spend', cl) + othersNote();
+    case 'budgets': return budgetsBlock() + '<div class="card"><p class="card-label">Project budget plans</p>' + plansBlock() + '</div>';
+    case 'claude': return seatsTable();
+    case 's18a': return s18aBlock();
+    case 'vault': return vaultTable();
+    case 'settings': return settingsBlock();
+    case 'yours': return yourMoney(false);
+  }
+}
+function actionQueue() {
+  // the Overview's action queue: what this hub would put on someone's plate, labelled by who it sits with
+  const items = [];
+  visibleClaims().forEach(c => { if (c.status === 'Pending' || c.status === 'Approved' || c.status === 'Queried') items.push({ txt: (c.status === 'Approved' ? 'Pay ' : c.status === 'Queried' ? 'Waiting on answer: ' : 'Decide ') + c.who + ' · ' + R(amt(c)), c }); });
+  if (isNational()) {
+    const l = S.ledger.find(x => x.sigs && x.sigs.length < 2); if (l) items.push({ txt: 'Co-sign: ' + l.desc, s: 'Any co-signatory' });
+    items.push({ txt: '3 Section 18A certificates outstanding', s: 'CFO' });
+  }
+  return items.length ? items.map(i => '<div class="kv"><span>' + esc(i.txt) + '</span>' + (i.c ? sitsCell(i.c) : '<span class="sits' + (i.s === 'CFO' && seat === 'cfo' ? ' you' : '') + '">' + i.s + '</span>') + '</div>').join('') : '<div class="empty">Nothing waiting.</div>';
+}
+function VariantA() {
+  const pages = readable();
+  if (!page || !pages.some(p => p.id === page)) page = pages[0].id;
+  let h = '<div class="hubtitle"><h2>Finance Hub</h2><span class="sub">The CFO\'s · one ledger · ' + (isBranchSeat() ? 'you see Wits in full' : isNational() ? (isExco() ? 'you write here' : 'you read, and write nothing') : 'your own money only') + '</span></div>';
+  if (pages.length > 1) h += '<div class="tabrow">' + pages.map(p => '<button class="tab" aria-selected="' + (p.id === page) + '" onclick="goPage(\'' + p.id + '\')">' + p.name + '</button>').join('') + '</div>';
+  h += pageBody(page);
+  if (seat === 'bm' && ['fuel', 'spend'].includes(page)) h += flag('<b>Open question.</b> #7 says a branch seat reads its own branch "in full". Taken here to mean the Branch Manager reads every Wits Claim by name, though they decide none of them. Is that right, or does a named Claim stay with the Finance Manager?');
+  if (seat === 'fm' && page === 'claude') h += '';
+  if (variant === 'A' && seat === 'cfo' && page === 'overview') h += flag('<b>One look across hubs.</b> This is the Operations Hub\'s pattern (#63: tabs under the title, a dense table per tab). The Branch Managers hub (#64) put its pages in the Shell sidebar instead. Finance has ten pages, which is a lot of tabs.');
+  if (pages.length === 1) h += flag('<b>Open question.</b> A Volunteer\'s Shell says "Finance Hub" and it opens straight onto Your money with no tabs. Should the nav item say <i>Your money</i> instead?');
+  return h;
+}
+
+/* ===================== VARIANT B: scope lens ===================== */
+function VariantB() {
+  if (!readable().some(p => p.id !== 'yours')) return '<div class="hubtitle"><h2>Your money</h2><span class="sub">Finance Hub · the part every member reaches</span></div>' + yourMoney(false) + flag('<b>Open question.</b> In this layout the Volunteer never sees the word "Finance Hub" on screen: the lens is for people who read the books.');
+  const scopes = ['Organisation', ...BRANCHES];
+  if (!scope || !scopes.includes(scope)) scope = isBranchSeat() ? MYBRANCH : 'Organisation';
+  const full = isNational() || scope === MYBRANCH;
+  let h = '<div class="hubtitle"><h2>Finance Hub</h2><span class="sub">Whose books are you looking at?</span></div>';
+  h += '<div class="scope"><span class="sub" style="margin-right:4px">Scope</span>' + scopes.map(s => {
+    const lockd = isBranchSeat() && s !== MYBRANCH && s !== 'Organisation';
+    const hidden = isBranchSeat() && s === 'Organisation';
+    if (hidden) return '';
+    return '<button class="tab' + (lockd ? ' locked' : '') + '" aria-selected="' + (s === scope) + '" onclick="goScope(\'' + s + '\')">' + s + (lockd ? ' · totals' : '') + '</button>';
+  }).join('') + (isNational() ? '<button class="tab" aria-selected="' + (scope === 'All branches') + '" onclick="goScope(\'All branches\')">All branches</button>' : '') + '</div>';
+  if (scope === 'All branches') {
+    return h + '<div class="sec"><h3>Every branch side by side</h3>' + othersTotals() + '</div>' + '<div class="sec"><h3>Claims across the country</h3>' + claimsTable(null, S.claims.filter(c => c.branch)) + '</div>';
+  }
+  if (!full) {
+    const bu = S.budgets.find(b => b.target === scope);
+    return h + '<div class="sec"><h3>' + scope + ' · totals only</h3><div class="card">' + gauge(bu) + Object.entries(S.byCat[scope]).map(([k, v]) => '<div class="kv"><b>' + k + '</b><span class="money">' + R(v) + '</span></div>').join('') + '</div>' + lock('You read ' + scope + '\'s Budget against spend and its spend by category. Its Claims, ledger lines and plans stay inside ' + scope + '.') + '</div>';
+  }
+  const inScope = c => scope === 'Organisation' ? !c.branch : c.branch === scope;
+  const cl = S.claims.filter(c => inScope(c) && seesClaim(c));
+  const bu = S.budgets.find(b => b.target === scope);
+  h += '<div class="cols2"><div class="card"><p class="card-label">' + (scope === 'Organisation' ? 'The organisation\'s money' : scope + ' this year') + '</p>' +
+    (scope === 'Organisation' ? '<div class="kv"><b>Cash on hand</b><span class="money">' + R(S.cash) + '</span></div><div class="kv"><b>Lines with no branch</b><span>' + S.ledger.filter(l => !l.branch).length + '</span></div>' + S.budgets.filter(b => b.scope === 'Category').map(b => gauge(b)).join('') : gauge(bu) + Object.entries(S.byCat[scope]).map(([k, v]) => '<div class="kv"><b>' + k + '</b><span class="money">' + R(v) + '</span></div>').join('')) +
+    '</div><div class="card pink"><p class="card-label">Who decides here</p>' + (scope === 'Organisation' ? '<div class="kv"><b>Claims with no branch</b><span class="sits' + (seat === 'cfo' ? ' you' : '') + '">CFO</span></div><div class="kv"><b>Plans with no home</b><span class="sits' + (seat === 'cfo' ? ' you' : '') + '">CFO</span></div>' : '<div class="kv"><b>' + scope + '\'s Claims</b><span class="sits' + (seat === 'fm' && scope === MYBRANCH ? ' you' : '') + '">' + FM_OF[scope] + ' (FM)</span></div><div class="kv"><b>The Finance Manager\'s own</b><span class="sits">CFO</span></div><div class="kv"><b>Plans homed here</b><span class="sits' + (seat === 'fm' && scope === MYBRANCH ? ' you' : '') + '">' + FM_OF[scope] + '</span></div>') + '<div class="kv"><b>Paying any Claim</b><span class="sits' + (seat === 'cfo' ? ' you' : '') + '">CFO (any Exco seat may)</span></div></div></div>';
+  h += '<div class="sec"><h3>Claims <span class="count">' + cl.filter(c => c.status === 'Pending').length + '</span></h3>' + claimsTable(null, cl) + '</div>';
+  h += '<div class="sec"><h3>Ledger lines</h3>' + ledgerTable(scope === 'Organisation' ? null : scope) + '</div>';
+  const pl = S.plans.filter(p => scope === 'Organisation' ? !p.home : p.home === scope);
+  if (seat !== 'bm') h += '<div class="sec"><h3>Project budget plans</h3>' + (pl.length ? (() => { const keep = S.plans; S.plans = pl; const t = plansBlock(); S.plans = keep; return t; })() : '<div class="empty">None.</div>') + '</div>';
+  if (isNational()) h += '<div class="sec"><h3>The organisation\'s books</h3><div class="drawer">' + ['claude', 's18a', 'vault', 'settings'].map(id => '<button class="btn' + (drawer === id ? ' primary' : '') + '" onclick="openDrawer(\'' + id + '\')">' + PAGES.find(p => p.id === id).name + '</button>').join('') + '</div>' + (drawer ? pageBody(drawer) : '') + '</div>';
+  h += flag('<b>Open question.</b> In this layout a branch is somewhere you go, not a column you filter. That suits a Finance Manager, who lives in one branch. Does it hide too much from the CFO, who needs the whole country at once? <i>All branches</i> is the attempt at that.');
+  return h;
+}
+
+/* ===================== VARIANT C: the Claim flow ===================== */
+function VariantC() {
+  if (!readable().some(p => p.id !== 'yours')) return '<div class="hubtitle"><h2>Finance Hub</h2><span class="sub">Your money</span></div>' + yourMoney(false);
+  const cl = visibleClaims();
+  const cols = [['Pending', 'Lodged: to decide'], ['Queried', 'Queried: with the claimant'], ['Approved', 'Approved: to pay'], ['Paid', 'Paid']];
+  let h = '<div class="hubtitle"><h2>Finance Hub</h2><span class="sub">Claims move left to right. Your column is the one where your name sits.</span></div>';
+  const mine = S.claims.filter(c => c.who === me().name);
+  if (mine.length) h += '<div class="strip"><b>Your own Claims:</b> ' + mine.map(c => esc(c.what.split(',')[0]) + ' ' + statusChip(c.status)).join(' · ') + ' <button class="btn quiet" onclick="lodge()">+ Lodge</button></div>';
+  h += '<div class="split"><div style="display:grid;gap:14px;min-width:0">';
+  h += '<div class="board">' + cols.map(([st, lbl]) => {
+    const list = cl.filter(c => c.status === st);
+    return '<div class="col"><h4><span>' + lbl + '</span><span>' + list.length + '</span></h4>' + list.map(c => '<div class="ccard' + (sitsYou(c) ? ' mine' : '') + '"><div class="top"><span>' + esc(c.who) + '</span><span class="money">' + R(amt(c)) + '</span></div><div class="sub">' + c.kind + ' · ' + (c.branch || 'Organisation') + ' · ' + esc(c.what) + '</div>' + (c.status === 'Queried' ? '<div class="qa">' + esc(c.query) + '</div>' : '') + (st !== 'Paid' ? '<div>' + sitsCell(c) + '</div>' : '') + claimActs(c) + '</div>').join('') + '</div>';
+  }).join('') + '</div>' + othersNote();
+  h += '<div class="card"><p class="card-label">The books</p><div class="drawer">' + readable().filter(p => !['overview', 'fuel', 'spend', 'yours'].includes(p.id)).map(p => '<button class="btn' + (drawer === p.id ? ' primary' : '') + '" onclick="openDrawer(\'' + p.id + '\')">' + p.name + '</button>').join('') + '</div>' + (drawer ? '<div style="margin-top:12px;display:grid;gap:12px">' + pageBody(drawer) + '</div>' : '<div class="sub" style="margin-top:8px">Save7 OS\'s other pages, opened here one at a time.</div>') + '</div>';
+  h += '</div><div style="display:grid;gap:12px">';
+  if (isNational()) h += '<div class="card"><p class="card-label">Cash on hand</p><div class="big" style="font-size:24px;font-weight:700;color:var(--navy)">' + R(S.cash) + '</div><div class="sub">In ' + R(17340) + ' · out ' + R(16190) + ' this month</div></div>';
+  const cs = S.ledger.find(x => x.sigs && x.sigs.length < 2);
+  if (isNational() && cs) h += '<div class="card pink"><p class="card-label">Awaiting co-signature</p><div class="kv"><b>' + esc(cs.desc) + '</b><span class="money">' + R(cs.out) + '</span></div><div class="sub">' + cs.sigs.length + ' of 2 · counts in the books already</div>' + (COSIGNATORIES.some(s => s.startsWith(me().name) && !cs.sigs.includes(s)) ? '<div class="acts" style="justify-content:flex-start;margin-top:8px"><button class="btn primary" onclick="cosign(\'' + cs.id + '\')">Co-sign</button></div>' : (isExco() && !COSIGNATORIES.some(s => s.startsWith(me().name)) ? '<div class="sub">You are not on the bank mandate.</div>' : '')) + '</div>';
+  h += '<div class="card"><p class="card-label">' + (isBranchSeat() ? 'Wits Budget' : 'Branch Budgets') + '</p>' + (isBranchSeat() ? gauge(S.budgets[0]) : S.budgets.filter(b => b.scope === 'Branch').map(b => gauge(b)).join('')) + '</div>';
+  const plans = S.plans.filter(p => p.status === 'Awaiting review' && (isNational() || (seat === 'fm' && p.home === MYBRANCH)));
+  if (plans.length) h += '<div class="card pink"><p class="card-label">Plans to review</p>' + plans.map(p => '<div class="kv"><b>' + esc(p.project) + '</b><span class="money">' + R(p.total) + '</span></div>').join('') + '<div class="sub">Opened from Budgets &amp; plans in The books.</div></div>';
+  h += '</div></div>';
+  h += flag('<b>Open question.</b> A board of things moving towards done is close to what the Dashboard does. #64 settled that a hub\'s figures describe the unit and clear nothing. Here the Claims are the books themselves, so is this a hub showing its records, or a Dashboard in disguise?');
+  return h;
+}
+
+/* ===================== SHELL ===================== */
+function Shell() {
+  const m = me();
+  const navBtn = (label, cls, onclick, extra) => '<button class="nav-item ' + cls + '" onclick="' + onclick + '">' + label + (extra || '') + '</button>';
+  let h = '<div class="who"><b>' + esc(m.name) + '</b>' + m.seat + ' · ' + m.where + (m.cosign ? ' · co-signatory' : '') + '</div>';
+  h += navBtn('Dashboard', 'dim', '');
+  h += '<div class="nav-sep"></div>';
+  h += navBtn('OKRs Hub', 'dim', '');
+  h += navBtn(seat === 'vol' ? 'Finance Hub' : 'Finance Hub', 'active', '');
+  if (isNational() || isBranchSeat()) h += navBtn('Operations Hub', 'dim', '');
+  h += navBtn('National Centre', 'dim', '');
+  if (isBranchSeat()) h += navBtn('Branch Centre', 'dim', '') + navBtn(seat === 'fm' ? 'Branch Finance Managers' : 'Branch Managers', 'l2 dim', '', seat === 'fm' ? ' <span class="chip amber">#72</span>' : '');
+  if (isNational() && seat !== 'cgo') h += navBtn('Users', 'dim', '');
+  if (seat === 'cgo') h += navBtn('Users', 'dim', '');
+  h += '<div class="nav-sep"></div><p class="sub" style="margin:0 10px">Grey items are the rest of the Shell (#3), not drawn here.</p>';
+  if (seat === 'fm') h += '<p class="sub" style="margin:8px 10px 0">#72 decides how the Branch Finance Managers hub divides from this one. It keeps no second set of books.</p>';
+  return h;
+}
+window.goPage = p => { page = p; render(); };
+window.goScope = s => { scope = s; drawer = null; render(); };
+window.openDrawer = id => { drawer = drawer === id ? null : id; render(); };
+
+/* ===================== RENDER ===================== */
+function render() {
+  document.getElementById('seatTabs').innerHTML = Object.values(SEATS).map(s => '<button class="tab" aria-selected="' + (s.key === seat) + '" onclick="setSeat(\'' + s.key + '\')">' + s.seat + (s.where === 'Wits' ? ' (Wits)' : '') + '</button>').join(' ');
+  document.getElementById('shell').innerHTML = Shell();
+  const panes = document.getElementById('panes');
+  panes.className = 'panes';
+  panes.innerHTML = '<div class="page">' + ({ A: VariantA, B: VariantB, C: VariantC })[variant]() + '</div>';
+  pushUrl();
+  const v = VARIANTS.find(x => x.key === variant);
+  document.getElementById('vlabel').textContent = v.key + ' (' + v.name + ')';
+  document.getElementById('log').textContent = log.length ? log.slice(0, 4).join('  ·  ') : 'Nothing pressed yet.';
+  document.getElementById('state').textContent = JSON.stringify({
+    url: location.search, variant: v.key + ' — ' + v.name, seat: me().seat + ' · ' + me().name,
+    pages_this_seat_opens: readable().map(p => p.name),
+    claims: S.claims.map(c => c.who + ' · ' + (c.branch || 'org') + ' · ' + R(amt(c)) + ' · ' + c.status + ' · sits with ' + sitsWith(c)),
+    co_signature: S.ledger.filter(l => l.sigs).map(l => l.desc + ': ' + l.sigs.length + ' of 2'),
+    budget_plans: S.plans.map(p => p.project + ': ' + p.status),
+    cash_on_hand: R(S.cash),
+  }, null, 2);
+}
+window.setSeat = k => { seat = k; drawer = null; render(); };
+function cycle(d) { const i = VARIANTS.findIndex(v => v.key === variant); variant = VARIANTS[(i + d + VARIANTS.length) % VARIANTS.length].key; drawer = null; render(); }
+document.getElementById('prev').onclick = () => cycle(-1);
+document.getElementById('next').onclick = () => cycle(1);
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if (t.closest && t.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+});
+render();
+</script>
+</body>
+</html>
