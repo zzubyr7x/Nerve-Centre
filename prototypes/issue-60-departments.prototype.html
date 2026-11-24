@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE — the Departments group and a Department's hub</title>
+<!--
+  PROTOTYPE, throwaway. Ticket: "Prototype: the Departments nav group and a Department's hub"
+  (zzubyr7x/Nerve-Centre#60). Question: what do the Departments Hub and a Department's hub
+  look like on screen, and how does someone go from the front page to the work behind it?
+
+  Three whole-page takes, switchable with ?variant=A|B|C (or the arrows / ← → keys), crossed
+  with a seat switcher (?seat=vol|member|inactive|head|exco):
+    A  Doorway     — the front page is a poster; members go through a door into the work, which has its own chrome
+    B  Two sides   — front page and the work side by side; the work is a visibly locked panel to outsiders
+    C  In the nav  — the Department's pages live in the Shell's nav; entering unfolds them
+  ?page=dir|dash|media|tech|research|education jumps straight to a page.
+  Everything lives in memory, shared across seats, so an act in one seat shows in another.
+  Reload resets it. Open questions are amber.
+-->
+<style>
+/* ==========================================================================
+   SAVE7 LOOK — the visual vocabulary every prototype on the Nerve Centre map
+   shares. Taken from the KEPSA presentation ("KEPSA Slides - SANS"), which the
+   user gave on 2026-10-07 as the design direction for the OS and all prototypes.
+
+   Colours were sampled from the rendered PDF, not guessed. Typeface is
+   Montserrat (embedded in the deck: Regular, Medium, SemiBold, Bold, italics).
+
+   Use it: paste this file into a prototype's <style> block and put
+   class="save7-look" on <body>. A prototype is inlined rather than linked so it
+   opens by double-click and survives being emailed; this file is the one source
+   the copies are taken from.
+
+   TWO EXTENSIONS beyond what the deck shows, both for small text:
+   --teal-ink and --pink-ink are darker twins of the brand teal and pink. The
+   brand values are fine for titles, fills and shapes (as the deck uses them) but
+   fall below readable contrast as small body text on white.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* brand */
+  --navy: #0C173B;
+  --teal: #00B7B5;
+  --pink: #ED186B;
+  --amber: #FFC550;          /* connectors, pins, third-in-sequence — never a main colour */
+  --ink: #585858;            /* body text */
+
+  /* tints (card borders, fills, blobs) */
+  --teal-border: #E6F7F7;
+  --teal-fill: #F4FBFB;
+  --mint: #F3FBFB;
+  --pink-border: #FCE8F0;
+  --pink-fill: #FFF5F7;
+  --pink-head: #FCDCE8;
+  --amber-fill: #FFF6DD;     /* derived from the amber, for flag callouts */
+
+  /* small-text twins (extension — see header) */
+  --teal-ink: #007F7D;
+  --pink-ink: #C70F58;
+  --amber-ink: #8A5B00;
+
+  --radius: 20px;
+  --radius-sm: 12px;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.save7-look {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+}
+
+/* ---- the two backdrop blobs: pale mint top-right, pale pink bottom-left ---- */
+.save7-look::before,
+.save7-look::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.save7-look::before { top: -22vw; right: -16vw; width: 52vw; height: 52vw; background: var(--mint); }
+.save7-look::after  { bottom: -20vw; left: -12vw; width: 38vw; height: 38vw; background: var(--pink-fill); }
+
+/* ---- the two-circle motif: big teal, smaller pink, overlapping ---- */
+.circles { position: relative; width: 104px; height: 96px; flex: none; }
+.circles::before,
+.circles::after { content: ''; position: absolute; border-radius: 50%; }
+.circles::before { top: 0; right: 0; width: 72px; height: 72px; background: var(--teal); }
+.circles::after  { bottom: 0; left: 6px; width: 44px; height: 44px; background: var(--pink); }
+
+/* ---- type ---- */
+.eyebrow { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: var(--pink-ink); }
+.eyebrow.teal { color: var(--teal-ink); }
+.title { margin: 0; font-weight: 700; color: var(--navy); line-height: 1.15; letter-spacing: -0.01em; }
+.title .dot { color: var(--pink); }
+.title .accent { color: var(--teal); }
+h1.title { font-size: 40px; }
+h2.title { font-size: 26px; }
+h3.title { font-size: 18px; }
+.lede { color: var(--ink); font-size: 15px; max-width: 70ch; }
+.strong { font-weight: 700; color: var(--navy); }
+.muted { color: #8a8a8a; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ---- cards: white, large radius, hairline tinted border; alternate teal/pink ---- */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.card.pink { border-color: var(--pink-border); }
+.card.tint-teal { background: var(--teal-fill); }
+.card.tint-pink { background: var(--pink-fill); }
+.card-label { margin: 0 0 10px; font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ---- number pills ("01", "BARRIER 01") ---- */
+.num {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.num.pink { background: var(--pink); }
+.num.amber { background: var(--amber); color: var(--navy); }
+
+/* ---- buttons: outlined teal pill; pink for the primary ---- */
+.btn {
+  font: 600 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--teal-fill); }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+.btn.primary:hover { background: #d4125d; }
+.btn.quiet { border-color: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--teal-fill); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* ---- status chips: small, pale ---- */
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-border);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+.chip.pink { background: var(--pink-border); color: var(--pink-ink); }
+.chip.amber { background: #FFEFC2; color: var(--amber-ink); }
+.chip.grey { background: #F1F1F3; color: #666; }
+
+/* ---- tabs: pill row, active in pink ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 600 13px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--teal-fill); }
+.tab[aria-selected="true"] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+
+/* ---- form controls ---- */
+input[type="text"], select {
+  font: 500 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+input[type="text"]::placeholder { color: #a5a5a5; }
+
+/* ---- labelled field rows ---- */
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.fields dt { font-weight: 600; font-size: 12px; color: #8a8a8a; align-self: center; }
+.fields dd { margin: 0; color: var(--navy); font-weight: 600; }
+
+/* ---- timeline bar: alternating teal and pink segments, amber pin on the current one ---- */
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.bar > i { flex: 1; background: var(--teal); }
+.bar > i:nth-child(even) { background: var(--pink); }
+.bar > i.todo { opacity: 0.22; }
+
+/* ---- callout: amber, for open questions the user should react to ---- */
+.flag {
+  background: var(--amber-fill);
+  border: 1.5px solid #FFE7A8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #5a4300;
+}
+.flag b { color: var(--amber-ink); }
+
+/* ---- logo ---- */
+.logo { display: block; height: 22px; width: auto; }
+
+
+/* ===================== prototype-only layout ===================== */
+html, body { height: 100%; }
+body.save7-look { background: #fff; }
+.proto-banner { position: sticky; top: 0; z-index: 30; background: var(--amber-fill); border-bottom: 1.5px solid #FFE7A8; color: #5a4300; font-size: 12px; padding: 6px 16px; text-align: center; }
+.proto-banner b { color: var(--amber-ink); }
+
+/* ---- the Shell: KEPSA-portal white sidebar, pink-tinted active item ---- */
+.shell { display: grid; grid-template-columns: 250px 1fr; min-height: calc(100vh - 31px); }
+.side { background: #fff; border-right: 1.5px solid var(--teal-border); padding: 18px 12px 120px; position: sticky; top: 31px; height: calc(100vh - 31px); overflow-y: auto; }
+.side .logo { height: 24px; margin: 4px 10px 18px; }
+.nav { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.nav li a { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 500; }
+.nav li a:hover { background: var(--teal-fill); }
+.nav li a.active { background: var(--pink-fill); color: var(--pink-ink); font-weight: 700; }
+.nav li a.dash { font-weight: 700; color: var(--navy); }
+.nav .grp > a { font-weight: 700; color: var(--navy); }
+.nav .chev { margin-left: auto; width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 6px; color: #9a9a9a; font-size: 11px; transition: transform .18s; }
+.nav .chev:hover { background: var(--teal-border); color: var(--navy); }
+.nav .closed > a .chev { transform: rotate(-90deg); }
+.nav ul { list-style: none; margin: 0; padding: 0 0 0 12px; }
+.nav .closed > ul { display: none; }
+.nav .roomlab { margin: 6px 10px 2px 22px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #a5a5a5; }
+.nav .rooms a { font-size: 12.5px; padding: 5px 10px 5px 22px; }
+.nav .unfold > li { animation: drop .28s both; animation-delay: calc(var(--i) * 45ms); }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.mk { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex: none; }
+.mk.in { background: #c9c9c9; }
+.mk.ask { background: var(--amber); }
+.mk-head { font-size: 9.5px; font-weight: 700; color: var(--pink-ink); background: var(--pink-border); padding: 1px 6px; border-radius: 999px; }
+.uc-dot { font-size: 9.5px; color: #9a9a9a; font-weight: 600; }
+
+.main { padding: 22px 28px 140px; min-width: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.crumb { font-size: 12px; color: #8a8a8a; }
+.crumb b { color: var(--navy); }
+.crumb a { color: #8a8a8a; text-decoration: none; }
+.crumb a:hover { color: var(--navy); text-decoration: underline; }
+.me { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.me .who { text-align: right; line-height: 1.25; }
+.me .who b { color: var(--navy); display: block; }
+
+/* ---- shared bits ---- */
+.av { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 700; font-size: 11px; color: #fff; background: var(--teal); flex: none; }
+.av.p { background: var(--pink); }
+.av.sm { width: 22px; height: 22px; font-size: 9px; }
+.av.gone { background: #d0d0d0; }
+.avs { display: inline-flex; }
+.avs .av { border: 2px solid #fff; margin-left: -6px; }
+.avs .av:first-child { margin-left: 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+.sm { font-size: 12px; }
+.xs { font-size: 11px; }
+.note { font-size: 12px; color: #8a8a8a; }
+.btn.sm { padding: 5px 12px; font-size: 12px; }
+.btn.ok { border-color: var(--teal); background: var(--teal); color: #fff; }
+.btn.ok:hover { background: #00a3a1; }
+.btn.red { border-color: #F3C3BE; color: #B42318; }
+.chip.red { background: #FEE4E2; color: #B42318; }
+.chip.navy { background: var(--navy); color: #fff; }
+.stack { display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hr { height: 1.5px; background: var(--teal-border); margin: 14px 0; border: 0; }
+textarea, input[type="date"], input[type="number"] { font: 500 13px var(--font); color: var(--navy); background: #fff; border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 8px 12px; }
+textarea { width: 100%; min-height: 70px; resize: vertical; }
+input[type="number"] { width: 80px; }
+label.f { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: #8a8a8a; }
+label.f input[type=text], label.f select, label.f input[type=date] { width: 100%; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12.5px; color: var(--navy); }
+.checks label { display: inline-flex; gap: 5px; align-items: center; }
+.empty { border: 1.5px dashed var(--teal-border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: #8a8a8a; font-size: 12.5px; }
+.flag { margin: 10px 0; }
+.list { display: grid; gap: 8px; }
+.li { border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 10px 14px; background: #fff; }
+.li.pink { border-color: var(--pink-border); }
+.li.red { border-color: #F3C3BE; background: #FFFBFA; }
+.kv { font-size: 12px; color: #8a8a8a; }
+.kv b { color: var(--navy); font-weight: 600; }
+.objs { display: flex; flex-wrap: wrap; gap: 6px; }
+.obj { font-size: 12px; font-weight: 600; color: var(--navy); background: var(--teal-fill); border: 1.5px solid var(--teal-border); border-radius: 999px; padding: 3px 11px; }
+.link { color: var(--teal-ink); font-weight: 600; text-decoration: none; cursor: pointer; background: none; border: 0; padding: 0; font: 600 12px var(--font); }
+.link:hover { text-decoration: underline; }
+.standing { display: inline-flex; align-items: center; gap: 6px; }
+.join { display: grid; gap: 8px; }
+.join .why { font-size: 12px; color: #8a8a8a; }
+.lock { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; }
+
+/* ---- offerings ---- */
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 54px; text-align: center; font-size: 10px; color: #8a8a8a; }
+.sw i { display: block; height: 38px; border-radius: 10px; margin-bottom: 3px; }
+.lib { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.lib div { aspect-ratio: 1; border-radius: 12px; position: relative; overflow: hidden; }
+.lib div span { position: absolute; left: 6px; bottom: 5px; font-size: 9.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.cov { display: grid; grid-template-columns: 64px 1fr auto; gap: 4px 12px; font-size: 12.5px; align-items: baseline; }
+.cov .d { color: #8a8a8a; font-size: 11.5px; }
+.cov .w { color: var(--navy); font-weight: 600; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; font-size: 11.5px; }
+.steps span { background: var(--teal-fill); border-radius: 999px; padding: 3px 10px; color: var(--teal-ink); font-weight: 600; }
+.steps span:nth-child(even) { background: var(--pink-fill); color: var(--pink-ink); }
+
+/* ---- the Board ---- */
+.board { display: grid; grid-template-columns: repeat(4, minmax(190px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.col { background: var(--teal-fill); border-radius: 16px; padding: 10px; min-height: 160px; }
+.col:nth-child(even) { background: var(--pink-fill); }
+.col h4 { margin: 2px 4px 10px; font-size: 12px; color: var(--navy); display: flex; justify-content: space-between; }
+.col h4 span { color: #8a8a8a; font-weight: 600; }
+.kcard { background: #fff; border: 1.5px solid var(--teal-border); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; display: grid; gap: 6px; transition: box-shadow .12s, transform .12s; }
+.kcard:hover { box-shadow: 0 4px 14px rgba(12,23,59,.08); transform: translateY(-1px); }
+.kcard.over { border-color: #F3C3BE; box-shadow: inset 3px 0 0 #D92D20; }
+.kcard .t { font-weight: 700; color: var(--navy); font-size: 13px; line-height: 1.3; }
+.dates { font-size: 11px; color: #8a8a8a; }
+.dates b { color: var(--navy); }
+.dates .slip { color: var(--pink-ink); font-weight: 700; }
+.dates s { color: #b0b0b0; }
+.blocked { font-size: 11px; background: #F1F1F3; color: #555; border-radius: 8px; padding: 3px 8px; }
+.red { color: #D92D20; }
+
+/* ---- calendar ---- */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal .h { font-size: 10.5px; font-weight: 700; color: #9a9a9a; text-align: center; padding: 4px 0; }
+.cal .d { min-height: 82px; border: 1.5px solid var(--teal-border); border-radius: 10px; padding: 4px 5px; font-size: 11px; background: #fff; display: grid; align-content: start; gap: 3px; }
+.cal .d.out { background: #fafafa; border-color: #f2f2f2; color: #c2c2c2; }
+.cal .d.today { border-color: var(--pink); }
+.cal .n { font-weight: 700; color: #9a9a9a; font-size: 10.5px; }
+.cal .today .n { color: var(--pink-ink); }
+.ev { border-radius: 7px; padding: 2px 5px; background: var(--teal-border); color: var(--teal-ink); font-weight: 600; font-size: 10.5px; line-height: 1.25; cursor: pointer; }
+.ev.pub { background: #F1F1F3; color: #777; text-decoration: line-through; }
+.ev.over { background: #FEE4E2; color: #B42318; }
+.ev.ghost { background: transparent; border: 1.5px dashed var(--amber); color: var(--amber-ink); cursor: default; }
+.ev small { display: block; font-weight: 500; opacity: .8; }
+
+/* ---- tracker ---- */
+.kpi { display: grid; grid-template-columns: 1fr 200px 110px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1.5px solid var(--teal-border); font-size: 13px; }
+.kpi:last-child { border-bottom: 0; }
+.meter { height: 8px; background: var(--teal-border); border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--teal); }
+.kpi:nth-child(even) .meter i { background: var(--pink); }
+
+/* ---- drawer & modal ---- */
+.scrim { position: fixed; inset: 0; background: rgba(12,23,59,.28); z-index: 60; display: flex; justify-content: flex-end; }
+.drawer { width: min(520px, 100%); height: 100%; background: #fff; overflow-y: auto; padding: 22px 24px 120px; box-shadow: -12px 0 40px rgba(12,23,59,.15); }
+.drawer.anim { animation: slidein .22s ease-out; }
+@keyframes slidein { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.task { display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f2f2f2; }
+.task.done .tt { text-decoration: line-through; color: #aaa; }
+.imp { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--pink-ink); }
+.imp.lo { color: #bbb; }
+
+/* ---- toast ---- */
+.toast { position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%) translateY(10px); background: var(--navy); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 12.5px; max-width: 560px; opacity: 0; pointer-events: none; transition: .2s; z-index: 80; }
+.toast.on { opacity: 1; transform: translateX(-50%); }
+
+/* ===================== take A: Doorway ===================== */
+.A-hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: stretch; margin-bottom: 18px; }
+.A-front { position: relative; padding: 26px 28px; border-radius: 28px; background: linear-gradient(135deg, var(--mint), #fff 65%); border: 1.5px solid var(--teal-border); overflow: hidden; }
+.A-front .circles { position: absolute; right: 18px; top: 16px; opacity: .9; }
+.A-front h1 { font-size: 46px; }
+.A-door { border-radius: 28px; padding: 24px; display: grid; gap: 12px; align-content: space-between; background: var(--navy); color: #cfd3e3; position: relative; overflow: hidden; }
+.A-door::after { content: ''; position: absolute; right: -40px; bottom: -40px; width: 160px; height: 160px; border-radius: 50%; background: var(--pink); opacity: .25; }
+.A-door h3 { color: #fff; margin: 0; font-size: 20px; }
+.A-door .rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+.A-door .rooms span { font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.08); color: #fff; }
+.A-door .rooms span.x { opacity: .4; }
+.A-door.shut { background: #fff; color: var(--ink); border: 1.5px dashed var(--pink-border); }
+.A-door.shut h3 { color: var(--navy); }
+.A-door.shut::after { display: none; }
+.A-enter { font: 700 15px var(--font); background: var(--pink); color: #fff; border: 0; border-radius: 999px; padding: 13px 22px; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; justify-self: start; position: relative; z-index: 1; }
+.A-enter:hover { background: #d4125d; }
+.A-enter .arr { transition: transform .15s; }
+.A-enter:hover .arr { transform: translateX(4px); }
+.A-offers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.A-offers .card:nth-child(4n+2), .A-offers .card:nth-child(4n+3) { border-color: var(--pink-border); }
+.A-offers .wide { grid-column: 1 / -1; }
+.A-inside { margin: -22px -28px 0; }
+.A-ihead { background: var(--navy); color: #cfd3e3; padding: 18px 28px 0; position: relative; overflow: hidden; }
+.A-ihead::before { content: ''; position: absolute; right: 60px; top: -50px; width: 140px; height: 140px; border-radius: 50%; background: var(--teal); opacity: .25; }
+.A-ihead::after { content: ''; position: absolute; right: 20px; top: 30px; width: 70px; height: 70px; border-radius: 50%; background: var(--pink); opacity: .35; }
+.A-ihead h2 { color: #fff; margin: 4px 0 2px; font-size: 26px; }
+.A-ihead .back { color: #cfd3e3; font: 600 12px var(--font); background: none; border: 0; cursor: pointer; padding: 0; }
+.A-ihead .back:hover { color: #fff; }
+.A-rooms { display: flex; gap: 2px; margin-top: 16px; flex-wrap: wrap; position: relative; z-index: 1; }
+.A-rooms button { font: 600 13px var(--font); color: #cfd3e3; background: transparent; border: 0; border-radius: 12px 12px 0 0; padding: 10px 16px; cursor: pointer; }
+.A-rooms button:hover { color: #fff; background: rgba(255,255,255,.06); }
+.A-rooms button[aria-selected=true] { background: #fff; color: var(--navy); }
+.A-ibody { padding: 22px 28px; }
+.doors { position: fixed; inset: 0; z-index: 90; pointer-events: none; display: grid; grid-template-columns: 1fr 1fr; }
+.doors i { display: block; background: var(--teal); animation: dl .62s cubic-bezier(.7,0,.3,1) .12s both; }
+.doors i + i { background: var(--pink); animation-name: dr; }
+.doors b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 34px; font-weight: 700; animation: fade .5s .1s both; }
+@keyframes dl { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes dr { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes fade { from { opacity: 1; } to { opacity: 0; } }
+.A-dir { display: grid; gap: 12px; }
+.A-drow { display: grid; grid-template-columns: 200px 1fr 210px; gap: 18px; align-items: center; padding: 18px 22px; border-radius: 22px; border: 1.5px solid var(--teal-border); background: #fff; cursor: pointer; transition: box-shadow .12s; }
+.A-drow:nth-child(even) { border-color: var(--pink-border); }
+.A-drow:hover { box-shadow: 0 6px 22px rgba(12,23,59,.07); }
+.A-drow h2 { margin: 0; font-size: 28px; }
+
+/* ===================== take B: Two sides ===================== */
+.B { display: grid; grid-template-columns: minmax(300px, 0.9fr) 1.3fr; gap: 18px; align-items: start; }
+.B-front { display: grid; gap: 12px; }
+.B-front details { border: 1.5px solid var(--teal-border); border-radius: 16px; background: #fff; }
+.B-front details:nth-of-type(even) { border-color: var(--pink-border); }
+.B-front summary { cursor: pointer; padding: 12px 16px; font-weight: 700; color: var(--navy); font-size: 13.5px; list-style: none; display: flex; justify-content: space-between; }
+.B-front summary::after { content: '+'; color: #aaa; }
+.B-front details[open] summary::after { content: '–'; }
+.B-front details > div { padding: 0 16px 14px; }
+.B-panel { border-radius: 24px; border: 1.5px solid var(--teal-border); background: #fff; padding: 20px; position: sticky; top: 50px; }
+.B-panel.locked { background: repeating-linear-gradient(135deg, #fff 0 14px, var(--teal-fill) 14px 28px); }
+.B-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.B-tile { border-radius: 16px; border: 1.5px solid var(--teal-border); background: #fff; padding: 12px; display: grid; gap: 8px; min-height: 108px; text-align: left; font: inherit; cursor: pointer; }
+.B-tile b { color: var(--navy); font-size: 13px; }
+.B-tile:hover { border-color: var(--teal); }
+.B-tile.locked { cursor: default; background: rgba(255,255,255,.7); }
+.B-tile.locked:hover { border-color: var(--teal-border); }
+.B-tile .ph { display: grid; gap: 5px; filter: blur(2.5px); }
+.B-tile .ph i { height: 7px; border-radius: 4px; background: var(--teal-border); }
+.B-tile .ph i:nth-child(2) { width: 70%; background: var(--pink-border); }
+.B-tile .ph i:nth-child(3) { width: 45%; }
+.B-in { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: start; }
+.B-rail { position: sticky; top: 50px; border-radius: 20px; background: var(--teal-fill); border: 1.5px solid var(--teal-border); padding: 14px 0; display: grid; justify-items: center; gap: 12px; cursor: pointer; min-height: 360px; }
+.anim .B-rail { animation: railin .45s ease-out both; }
+.B-rail:hover { background: var(--teal-border); }
+.B-rail .v { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 700; color: var(--navy); font-size: 15px; letter-spacing: .02em; }
+.B-rail .v small { color: #8a8a8a; font-weight: 600; font-size: 11px; }
+.B-work { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: start; }
+.anim .B-work { animation: unlock .5s ease-out both; }
+.B-rooms { display: grid; gap: 4px; position: sticky; top: 50px; }
+.B-rooms button { text-align: left; font: 600 13px var(--font); color: var(--ink); background: #fff; border: 1.5px solid transparent; border-radius: 12px; padding: 9px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.B-rooms button:hover { background: var(--teal-fill); }
+.B-rooms button[aria-selected=true] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+.B-rooms button.locked { color: #b5b5b5; cursor: default; }
+.B-rooms button.locked:hover { background: #fff; }
+@keyframes unlock { from { clip-path: inset(0 0 0 55% round 24px); filter: blur(4px); opacity: .4; } to { clip-path: inset(0 0 0 0 round 0); filter: none; opacity: 1; } }
+@keyframes railin { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.B-dir { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.B-dcard { border-radius: 24px; padding: 22px; border: 1.5px solid var(--teal-border); background: #fff; display: grid; gap: 10px; cursor: pointer; position: relative; overflow: hidden; }
+.B-dcard:nth-child(4n+2), .B-dcard:nth-child(4n+3) { border-color: var(--pink-border); }
+.B-dcard:hover { box-shadow: 0 6px 22px rgba(12,23,59,.07); }
+.B-dcard .circles { position: absolute; right: -24px; top: -24px; transform: scale(.7); opacity: .18; }
+
+/* ===================== take C: In the nav ===================== */
+.C-head { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: 20px; background: var(--teal-fill); border: 1.5px solid var(--teal-border); margin-bottom: 14px; flex-wrap: wrap; }
+.C-head h1 { font-size: 30px; }
+.C-enter { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.C-tabs { margin: 0 0 14px; }
+.C-in-head { display: flex; align-items: baseline; gap: 10px; border-bottom: 1.5px solid var(--teal-border); padding-bottom: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.C-in-head h2 { font-size: 22px; }
+.C-in-head .badge { font-size: 11px; font-weight: 700; color: #fff; background: var(--navy); border-radius: 999px; padding: 2px 10px; }
+.C-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.C-table th { text-align: left; font-size: 11px; color: #9a9a9a; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; padding: 8px 10px; border-bottom: 1.5px solid var(--teal-border); }
+.C-table td { padding: 12px 10px; border-bottom: 1.5px solid var(--teal-border); vertical-align: top; }
+.C-table tr.click { cursor: pointer; }
+.C-table tr.click:hover td { background: var(--teal-fill); }
+
+/* ===================== the prototype switcher ===================== */
+.pswitch { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 5px; background: #111; color: #fff; border-radius: 999px; padding: 6px 8px; box-shadow: 0 10px 30px rgba(0,0,0,.35); font: 600 12px system-ui, -apple-system, sans-serif; max-width: calc(100vw - 16px); overflow-x: auto; white-space: nowrap; }
+.pswitch button { font: inherit; color: #fff; background: #2a2a2a; border: 0; border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+.pswitch button:hover { background: #3a3a3a; }
+.pswitch button.on { background: #FFC550; color: #111; }
+.pswitch .lbl { padding: 0 8px; min-width: 120px; text-align: center; }
+.pswitch .sep { width: 1px; height: 20px; background: #444; margin: 0 3px; flex: none; }
+.pswitch .k { color: #999; font-weight: 500; padding-left: 4px; }
+
+@media (max-width: 1100px) {
+  .A-hero, .B, .grid2 { grid-template-columns: 1fr; }
+  .A-drow { grid-template-columns: 1fr; }
+  .B-panel { position: static; }
+  .B-work { grid-template-columns: 1fr; }
+  .B-rooms { position: static; display: flex; flex-wrap: wrap; }
+  .kpi { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; padding: 10px 16px; border-right: 0; border-bottom: 1.5px solid var(--teal-border); }
+  .main { padding: 16px 16px 140px; }
+  .A-inside { margin: -16px -16px 0; }
+  .A-offers, .B-dir, .B-tiles { grid-template-columns: 1fr; }
+  .B-in { grid-template-columns: 1fr; }
+  .B-rail { min-height: 0; writing-mode: horizontal-tb; }
+  .B-rail .v { writing-mode: horizontal-tb; transform: none; }
+  .lib { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .doors { display: none; }
+}
+</style>
+</head>
+<body class="save7-look">
+<div class="proto-banner"><b>PROTOTYPE</b> · the Departments group and a Department's hub · three takes, five seats · made-up people, nothing is saved — reload to start again · <b>amber</b> boxes are open questions</div>
+<div class="shell">
+  <aside class="side">
+    <img class="logo" alt="Save7" src="data:image/png;base64,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">
+    <ul class="nav" id="nav"></ul>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="modal"></div>
+<div id="fx"></div>
+<div class="pswitch" id="pswitch"></div>
+
+<script>
+// =====================================================================
+// data
+// =====================================================================
+const TODAY = '2026-11-24';
+const VARIANTS = { A: 'Doorway', B: 'Two sides', C: 'In the nav' };
+const SEATS = {
+  vol:      { id: 'naledi',  short: 'Volunteer',        role: 'Volunteer · UCT' },
+  member:   { id: 'thabo',   short: 'Media member',     role: 'Volunteer · Wits · Media, Education' },
+  inactive: { id: 'lindiwe', short: 'Inactive member',  role: 'Volunteer · UP · Media (inactive)' },
+  head:     { id: 'zinhle',  short: 'Head of two',      role: 'Head of Media · Head of Education' },
+  exco:     { id: 'sipho',   short: 'Exco',             role: 'CEO · National Exco' },
+};
+const PEOPLE = {
+  naledi: ['Naledi Mokoena', 'UCT'], thabo: ['Thabo Nkosi', 'Wits'], lindiwe: ['Lindiwe Dube', 'UP'],
+  zinhle: ['Zinhle Mahlangu', 'Wits'], sipho: ['Sipho Ndlovu', 'UCT'], kea: ['Kea Mthembu', 'Stellenbosch'],
+  kagiso: ['Kagiso Molefe', 'Wits'], busi: ['Busi Khumalo', 'UJ'], farah: ['Farah Ismail', null],
+  lerato: ['Lerato Sithole', 'UP'], amara: ['Amara Osei', null], pieter: ['Pieter de Klerk', 'Stellenbosch'],
+  ruth: ['Ruth Mensah', 'Wits'], musa: ['Musa Zulu', 'UCT'], aisha: ['Aisha Patel', 'UJ'],
+};
+const COLS = ['Not started', 'In progress', 'Done', 'Published'];
+const CHANNELS = ['Website', 'Facebook', 'Instagram', 'TikTok', 'YouTube', 'LinkedIn'];
+
+function seed() {
+  return {
+    seq: 100,
+    depts: [
+      { key: 'media', name: 'Media', uc: false, head: 'zinhle',
+        forText: "Tells Save7's story — the brand, the content and the coverage, for every branch and Project. Ask us for content below.",
+        objectives: ["Grow Save7's reach among students", 'Make every branch launch visible'], supportKRs: 3, lastReport: '2026-11-12',
+        members: { zinhle: 'head', thabo: 'active', lindiwe: 'inactive', kea: 'active', kagiso: 'deactivated' },
+        requests: [{ who: 'busi', on: '2026-11-20' }], invites: [{ who: 'farah', on: '2026-11-19' }], declined: {},
+        events: [{ id: 'e1', name: 'Photo walk & phone-editing workshop', on: '2026-12-06', where: 'Wits, Braamfontein', cap: 20, signed: ['kea', 'thabo'], others: 12, who: 'anyone' }],
+        reports: [
+          { on: '2026-11-12', text: 'Four of six branch launch videos out. Recruitment reel slipped to 28 Nov — filming moved after exams. Need Exco to settle whether we post for partner organisations.' },
+          { on: '2026-10-08', text: 'Brand kit v2 shipped. Instagram up 140 followers this month. Two new members onboarded (Kea, Thabo).' },
+        ],
+        tracker: {
+          kpis: [{ n: 'Posts published a month', cur: 12, tgt: 16 }, { n: 'Instagram followers', cur: 820, tgt: 1000 }, { n: 'Branches with a launch video', cur: 4, tgt: 6 }],
+          ms: [{ n: 'Brand kit v2 out', on: '2026-09-30', done: true }, { n: 'Coverage log back-filled to January', on: '2026-10-31', done: false }, { n: '2027 content calendar agreed', on: '2026-12-15', done: false }],
+          dl: [{ n: 'Branch launch videos', plan: 6, act: 4 }, { n: 'Annual report cover', plan: 1, act: 0 }],
+        } },
+      { key: 'tech', name: 'Tech', uc: true, head: 'lerato',
+        forText: 'Builds and keeps the tools Save7 runs on — Save7 OS first.',
+        objectives: ['Ship Save7 OS 2.0 before the merge'], supportKRs: 2, lastReport: '2026-10-03',
+        members: { lerato: 'head', kea: 'active', musa: 'active' },
+        requests: [], invites: [], declined: { naledi: { on: '2026-11-02', reason: "We're only taking people with some web experience this term — ask again in February." } },
+        events: [],
+        reports: [{ on: '2026-10-03', text: 'Shell rebuilt from seats in staging. Waiting on the joint session with Gilbert for the schema.' }],
+        tracker: { kpis: [{ n: 'Hubs live on Save7 OS', cur: 9, tgt: 16 }], ms: [{ n: 'Shell rebuilt from seats', on: '2027-01-31', done: false }], dl: [] } },
+      { key: 'research', name: 'Research', uc: true, head: null,
+        forText: '', objectives: [], supportKRs: 0, lastReport: null,
+        members: { pieter: 'active', aisha: 'active' }, requests: [], invites: [], declined: {}, events: [], reports: [],
+        tracker: { kpis: [{ n: 'Studies published', cur: 0, tgt: 2 }], ms: [], dl: [] } },
+      { key: 'education', name: 'Education', uc: true, head: 'zinhle',
+        forText: 'Peer education on campuses — the curriculum, and the people who teach it.',
+        objectives: ['Launch the peer-educator curriculum'], supportKRs: 1, lastReport: null,
+        members: { zinhle: 'head', thabo: 'active' },
+        requests: [{ who: 'naledi', on: '2026-11-18' }, { who: 'musa', on: '2026-11-23' }], invites: [{ who: 'aisha', on: '2026-11-21' }], declined: {},
+        events: [{ id: 'e2', name: 'Peer-educator info evening', on: '2026-12-03', where: 'UCT, Leslie Social Sciences', cap: null, signed: ['thabo'], others: 4, who: 'own' }],
+        reports: [],
+        tracker: { kpis: [{ n: 'Trained peer educators', cur: 0, tgt: 24 }], ms: [{ n: 'Curriculum first draft', on: '2027-02-28', done: false }], dl: [] } },
+    ],
+    pending: [
+      { id: 'r1', tag: 'Stellenbosch branch launch recap', desc: "Photos and a short recap of the launch evening, for the branch's first month.", type: 'post', ch: ['Instagram', 'Facebook'], by: 'pieter', wanted: '2026-12-02', on: '2026-11-21', branch: 'Stellenbosch' },
+      { id: 'r2', tag: 'World AIDS Day explainer', desc: '60 seconds on what PrEP is and where a student gets it.', type: 'reel', ch: ['TikTok', 'Instagram'], by: 'amara', wanted: '2026-12-01', on: '2026-11-22', branch: null },
+    ],
+    cards: [
+      { id: 'c1', tag: 'Recruitment drive reel', desc: 'A 30-second reel for the January recruitment push, filmed on campus.', type: 'reel', ch: ['Instagram', 'TikTok'], by: 'naledi', wanted: '2026-11-15', sched: '2026-11-28', col: 'In progress', opted: ['thabo', 'lindiwe'], acceptedBy: 'thabo', branch: 'UCT', blocked: null,
+        tasks: [{ id: 't1', t: 'Storyboard the 30 seconds', owner: 'thabo', imp: 3, due: '2026-11-22', done: true }, { id: 't2', t: 'Shoot on the library steps', owner: 'thabo', imp: 2, due: '2026-11-26', done: false }, { id: 't3', t: 'Captions in three languages', owner: 'lindiwe', imp: 1, due: null, done: false }] },
+      { id: 'c2', tag: 'Hospital visit photo story', desc: 'Long-form piece for the website on the Bara ward visits.', type: 'long-form', ch: ['Website'], by: 'lerato', wanted: '2026-11-10', sched: '2026-11-18', col: 'In progress', opted: ['thabo'], acceptedBy: 'zinhle', branch: null, blocked: 'Waiting on signed consent forms from the ward',
+        tasks: [{ id: 't4', t: 'Pick eight photos', owner: 'thabo', imp: 2, due: '2026-11-16', done: true }] },
+      { id: 'c3', tag: 'Annual report cover', desc: 'Cover and divider pages for the 2026 annual report.', type: 'post', ch: ['Website'], by: null, wanted: null, sched: '2026-12-05', col: 'Not started', opted: [], acceptedBy: 'zinhle', branch: null, blocked: null, tasks: [] },
+      { id: 'c4', tag: 'Mental health week carousel', desc: 'Six slides on where to get help on each campus.', type: 'post', ch: ['Instagram'], by: 'amara', wanted: '2026-11-03', sched: '2026-11-03', col: 'Published', opted: ['kea'], acceptedBy: 'kea', branch: null, blocked: null,
+        tasks: [{ id: 't5', t: 'Design six slides', owner: 'kea', imp: 3, due: '2026-10-30', done: true }] },
+      { id: 'c5', tag: 'Donor thank-you video', desc: 'Two minutes of volunteers thanking this year\'s donors.', type: 'long-form', ch: ['YouTube', 'LinkedIn'], by: 'ruth', wanted: '2026-11-30', sched: '2026-12-08', col: 'Done', opted: ['zinhle'], acceptedBy: 'zinhle', branch: null, blocked: null,
+        tasks: [{ id: 't6', t: 'Edit the final cut', owner: 'zinhle', imp: 3, due: '2026-11-23', done: true }] },
+      { id: 'c6', tag: 'Exam season study tips', desc: 'Short tips post for the exam weeks.', type: 'post', ch: ['Instagram', 'Facebook'], by: 'sipho', wanted: '2026-11-20', sched: '2026-11-20', col: 'Not started', opted: [], acceptedBy: 'thabo', branch: null, blocked: null, tasks: [] },
+      { id: 'c7', tag: 'Wits Freshers stall photos', desc: 'Photos from the stall for the branch page.', type: 'post', ch: ['Instagram'], by: 'pieter', wanted: '2026-12-10', sched: '2026-12-10', col: 'Not started', opted: ['kea'], acceptedBy: 'kea', branch: 'Wits', blocked: null, tasks: [] },
+    ],
+    declinedReq: [{ id: 'x1', tag: 'Merch shop promo', by: 'naledi', reason: "Save7 doesn't sell merch — ask Finance whether a shop is planned first.", on: '2026-11-14' }],
+    signedUp: {},
+  };
+}
+
+// =====================================================================
+// state, helpers
+// =====================================================================
+let DB = seed();
+const params = new URLSearchParams(location.search);
+const pg = params.get('page');
+let UI = {
+  variant: VARIANTS[params.get('variant')] ? params.get('variant') : 'A',
+  seat: SEATS[params.get('seat')] ? params.get('seat') : 'vol',
+  page: pg === 'dir' || pg === 'dash' ? pg : (['media', 'tech', 'research', 'education'].includes(pg) ? 'dept' : 'dir'),
+  dept: ['media', 'tech', 'research', 'education'].includes(pg) ? pg : 'media',
+  inside: false, room: null, card: null, justEntered: false,
+  navClosed: new Set(), cOpen: new Set(), offer: 'brand', calMonth: 10, ghosts: false,
+  answering: null, declining: null, declineJoin: null, adding: null, writingReport: false, branchFilter: '', addingDept: false,
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nm = id => PEOPLE[id] ? PEOPLE[id][0] : id;
+const initials = id => nm(id).split(' ').map(w => w[0]).slice(0, 2).join('');
+const av = (id, cls = '') => `<span class="av ${cls}" title="${esc(nm(id))}">${esc(initials(id))}</span>`;
+const fmt = iso => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
+const days = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00:00')) / 864e5);
+const me = () => SEATS[UI.seat].id;
+const isExco = () => UI.seat === 'exco';
+const dept = k => DB.depts.find(d => d.key === k);
+const D = () => dept(UI.dept);
+const LOCK = '<svg class="lock" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="6" rx="1.5" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>';
+let toastT;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 5200); }
+
+// ---- standing & permissions (the model, not the design) ----
+function standing(d, pid = me()) {
+  if (pid === 'sipho') return 'reads';
+  const m = d.members[pid]; if (m) return m;                      // head | active | inactive | deactivated
+  if (d.requests.some(r => r.who === pid)) return 'pending';
+  if (d.invites.some(r => r.who === pid)) return 'invited';
+  if (!d.head) return 'closed';
+  if (d.declined[pid]) return 'declined';
+  return 'none';
+}
+const canEnter = d => ['head', 'active', 'inactive', 'reads'].includes(standing(d));
+const canWrite = d => ['head', 'active', 'reads'].includes(standing(d));
+const canReadReports = d => ['head', 'reads'].includes(standing(d));          // + the General Liaison
+const canWriteReports = d => standing(d) === 'head' || (isExco());             // Exco as backstop
+const canRunTracker = d => standing(d) === 'head' || isExco();                 // Head, Exco backstop
+const canAnswer = () => canWrite(dept('media'));
+function canMove(c) { const s = standing(dept('media')); return s === 'head' || s === 'reads' || (s === 'active' && c.opted.includes(me())); }
+const canOpt = () => ['head', 'active'].includes(standing(dept('media')));
+const overdue = c => c.col !== 'Published' && c.sched < TODAY;
+const redOn = c => overdue(c) ? (c.opted.length ? c.opted : [c.acceptedBy]) : [];
+
+const STAND_TXT = {
+  head: ['You head it', 'pink'], active: ['Member', ''], inactive: ['Inactive', 'grey'], deactivated: ['Deactivated', 'grey'],
+  pending: ['Request pending', 'amber'], invited: ['Invited', 'amber'], declined: ['Declined', 'grey'], closed: ['No Head yet — closed', 'grey'],
+  none: ['Not a member', 'grey'], reads: ['Exco · reads all', 'navy'],
+};
+const standChip = d => { const [t, c] = STAND_TXT[standing(d)]; return `<span class="chip ${c}">${t}</span>`; };
+function roomsFor(d) {
+  const base = d.uc ? ['uc', 'tracker', 'reports'] : ['scheduler', 'board', 'calendar', 'tasks', 'tracker', 'reports'];
+  return base.map(k => ({ k, ok: k === 'reports' ? canReadReports(d) : canEnter(d) }));
+}
+const ROOM = { scheduler: 'Scheduler', board: 'Content tracker', calendar: 'Calendar', tasks: 'Tasks', tracker: 'Department tracker', reports: 'Reports', uc: 'The work' };
+const firstRoom = d => d.uc ? 'uc' : 'board';
+
+// =====================================================================
+// acts
+// =====================================================================
+function askJoin(d) { d.requests.push({ who: me(), on: TODAY }); delete d.declined[me()]; toast(`Asked to join ${d.name}. It waits on ${nm(d.head)}'s Dashboard until they answer — it never lapses.`); }
+function withdrawJoin(d) { d.requests = d.requests.filter(r => r.who !== me()); toast('Request withdrawn. You can ask again any time.'); }
+function acceptInvite(d) { d.invites = d.invites.filter(r => r.who !== me()); d.members[me()] = 'active'; toast(`You're a member of ${d.name}.`); }
+function declineInvite(d) { d.invites = d.invites.filter(r => r.who !== me()); toast('Invitation declined.'); }
+function leave(d) { delete d.members[me()]; UI.inside = false; toast(`You left ${d.name}. You can ask to join again.`); }
+function approveJoin(d, who) { d.requests = d.requests.filter(r => r.who !== who); d.members[who] = 'active'; toast(`${nm(who)} is now a member of ${d.name}.`); }
+function declineJoin(d, who, reason) { d.requests = d.requests.filter(r => r.who !== who); d.declined[who] = { on: TODAY, reason: reason.trim() }; toast(`Declined ${nm(who)}${reason.trim() ? ', with a reason' : ''}. They may ask again.`); }
+function invite(d, who) { d.invites.push({ who, on: TODAY }); toast(`Invited ${nm(who)}. It stands on their Dashboard until they accept or decline.`); }
+function withdrawInvite(d, who) { d.invites = d.invites.filter(r => r.who !== who); toast('Invitation withdrawn.'); }
+function setInactive(d, who, on) { d.members[who] = on ? 'inactive' : 'active'; toast(on ? `${nm(who)} is inactive in ${d.name}: they can still enter and read, not write.` : `${nm(who)} is active again.`); }
+function removeMember(d, who) { delete d.members[who]; toast(`${nm(who)} removed from ${d.name}. They may ask again.`); }
+
+// =====================================================================
+// shared renderers — the pieces every take arranges differently
+// =====================================================================
+function headLine(d) { return d.head ? `<span class="kv">Head <b>${esc(nm(d.head))}</b></span>` : `<span class="kv"><b>No Head yet</b></span>`; }
+function forLine(d) { return d.forText ? esc(d.forText) : `<span class="note">Not written yet — ${d.head ? 'the Head writes this' : 'its Head will write this'}.</span>`; }
+function objLine(d) {
+  return d.objectives.length
+    ? `<div class="objs">${d.objectives.map(o => `<span class="obj">${esc(o)}</span>`).join('')}</div>${d.supportKRs ? `<button class="link" data-act="okrs">${d.supportKRs} Key Results name ${esc(d.name)} as a supporting unit →</button>` : ''}`
+    : `<span class="note">Nothing on the ladder yet.</span>`;
+}
+const reportedLine = d => `<span class="kv">Last reported <b>${d.lastReport ? fmt(d.lastReport) : 'never'}</b></span>`;
+const ucChip = d => d.uc ? '<span class="chip amber">Under construction</span>' : '';
+
+function joinControl(d) {
+  const s = standing(d);
+  switch (s) {
+    case 'none': return `<div class="join"><button class="btn primary" data-act="askJoin">Ask to join ${esc(d.name)}</button><span class="why">${esc(nm(d.head))} answers. Your branch has no say — they own you, the Head owns the work.</span></div>`;
+    case 'pending': { const r = d.requests.find(x => x.who === me()); return `<div class="join"><div class="row"><span class="chip amber">Request pending</span><span class="note">since ${fmt(r.on)} · with ${esc(nm(d.head) || 'the next Head')}</span></div><div><button class="btn sm" data-act="withdrawJoin">Withdraw request</button></div></div>`; }
+    case 'declined': { const x = d.declined[me()]; return `<div class="join"><div class="row"><span class="chip grey">Declined ${fmt(x.on)}</span></div>${x.reason ? `<div class="li sm">“${esc(x.reason)}” <span class="note">— ${esc(nm(d.head))}</span></div>` : '<span class="why">No reason given.</span>'}<div><button class="btn sm" data-act="askJoin">Ask again</button></div></div>`; }
+    case 'closed': return `<div class="join"><button class="btn" disabled>Closed to requests</button><span class="why">${esc(d.name)} has no Head yet, so nobody could answer a request. It opens when Exco switch a Head on.</span></div>`;
+    case 'invited': return `<div class="join"><div class="row"><span class="chip amber">${esc(nm(d.head))} invited you</span></div><div class="row"><button class="btn primary sm" data-act="acceptInvite">Accept</button><button class="btn sm" data-act="declineInvite">Decline</button></div></div>`;
+    case 'active': return `<div class="join"><div class="row"><span class="chip">You're a member</span><button class="btn quiet sm" data-act="leave">Leave</button></div></div>`;
+    case 'inactive': return `<div class="join"><div class="row"><span class="chip grey">Inactive</span><button class="btn quiet sm" data-act="leave">Leave</button></div><span class="why">${esc(nm(d.head))} marked you inactive. You can still go in and read; you can't write until they clear it.</span></div>`;
+    case 'head': return `<div class="join"><div class="row"><span class="chip pink">You head ${esc(d.name)}</span><button class="link" data-act="go" data-page="dash">Run its membership from your Dashboard →</button></div></div>`;
+    case 'reads': return `<div class="join"><div class="row"><span class="chip navy">National Exco</span></div><span class="why">You read everything behind this page and write there as backstop to the Head. You don't join.</span></div>`;
+    default: return '';
+  }
+}
+
+// ---- what Media offers everyone ----
+function offerBrand() {
+  return `<p class="sm" style="margin:0 0 10px">Logos, colours and type — use these for anything that says Save7.</p>
+  <div class="swatches">${[['#0C173B', 'Navy'], ['#00B7B5', 'Teal'], ['#ED186B', 'Pink'], ['#FFC550', 'Amber']].map(([c, n]) => `<div class="sw"><i style="background:${c}"></i>${n}</div>`).join('')}<div class="sw"><i style="background:#fff;border:1.5px solid var(--teal-border);display:grid;place-items:center;font:700 15px var(--font);color:var(--navy)">Aa</i>Montserrat</div></div>
+  <div class="row" style="margin-top:12px"><button class="btn sm" data-act="dl" data-what="the logo pack">Logo pack</button><button class="btn sm" data-act="dl" data-what="the brand guide">Brand guide (PDF)</button></div>`;
+}
+function offerTemplates() {
+  return `<div class="list">${[['Instagram post', '1080 × 1080'], ['Story / reel cover', '1080 × 1920'], ['Event poster', 'A4'], ['Branch report cover', 'A4']].map(([t, s]) => `<div class="li row"><b class="strong sm">${t}</b><span class="note">${s}</span><span class="grow"></span><button class="link" data-act="dl" data-what="the ${t} template">Open in Canva</button></div>`).join('')}</div>`;
+}
+function offerCoverage() {
+  const rows = [...DB.cards.filter(c => c.col === 'Published').map(c => [c.sched, c.tag, c.ch.join(', ')]), ['2026-10-28', 'Wits branch launch', 'Facebook, Instagram'], ['2026-10-14', 'Bara ward visit — first day', 'Website'], ['2026-09-30', 'Brand kit v2', 'LinkedIn']].sort((a, b) => b[0].localeCompare(a[0]));
+  return `<p class="sm" style="margin:0 0 10px">What Media has covered, newest first.</p><div class="cov">${rows.map(([d, w, c]) => `<span class="d">${fmt(d)}</span><span class="w">${esc(w)}</span><span class="note">${esc(c)}</span>`).join('')}</div>`;
+}
+function offerLibrary() {
+  const g = [['#00B7B5', '#0C173B', 'UCT'], ['#ED186B', '#FFC550', 'Wits'], ['#0C173B', '#00B7B5', 'National'], ['#FFC550', '#ED186B', 'Stellenbosch'], ['#00B7B5', '#ED186B', 'UP'], ['#0C173B', '#ED186B', 'National'], ['#ED186B', '#00B7B5', 'UJ'], ['#FFC550', '#00B7B5', 'Wits']];
+  return `<p class="sm" style="margin:0 0 10px">Photos and video from every branch, tagged by branch — one national library, no branch copies.</p><div class="lib">${g.map(([a, b, t]) => `<div style="background:linear-gradient(135deg,${a},${b})"><span>${t}</span></div>`).join('')}</div><div class="row" style="margin-top:10px"><button class="btn sm" data-act="dl" data-what="the library">Open the library</button></div>`;
+}
+function offerAsk() {
+  return `<p class="sm" style="margin:0 0 6px">Need a post, a reel or a long piece? Ask Media. Anyone can.</p>
+  <div class="steps" style="margin-bottom:12px"><span>You ask</span><span>A member answers</span><span>It gets a date</span><span>You follow it on your Dashboard</span></div>
+  <div class="stack" style="gap:10px">
+    <label class="f">Tagline<input type="text" id="rq-tag" placeholder="e.g. UJ branch blood drive"></label>
+    <label class="f">What you need<textarea id="rq-desc" placeholder="A sentence or two"></textarea></label>
+    <div class="grid2" style="gap:10px"><label class="f">Date wanted<input type="date" id="rq-date" value="2026-12-12"></label>
+    <label class="f">Type<select id="rq-type"><option>post</option><option>reel</option><option>long-form</option></select></label></div>
+    <div><div class="kv" style="margin-bottom:4px"><b>Channels</b></div><div class="checks">${CHANNELS.map(c => `<label><input type="checkbox" name="rq-ch" value="${c}" ${c === 'Instagram' ? 'checked' : ''}> ${c}</label>`).join('')}</div></div>
+    <div><button class="btn primary" data-act="submitReq">Send to Media</button></div>
+  </div>`;
+}
+function eventsBlock(d) {
+  if (!d.events.length) return `<p class="note" style="margin:0">No Events on. ${d.head ? esc(nm(d.head)) + ' puts them on from here.' : ''}</p>`;
+  return `<div class="list">${d.events.map(e => {
+    const mine = e.signed.includes(me()); const n = e.signed.length + e.others;
+    const own = e.who === 'own' && !['head', 'active', 'inactive'].includes(standing(d));
+    return `<div class="li"><div class="row"><b class="strong sm">${esc(e.name)}</b><span class="grow"></span><span class="chip ${mine ? '' : 'grey'}">${mine ? 'Signed up' : fmt(e.on)}</span></div>
+      <div class="note">${fmt(e.on)} · ${esc(e.where)} · ${n}${e.cap ? ' of ' + e.cap : ''} signed up · ${e.who === 'own' ? `for ${esc(d.name)}'s members` : 'open to anyone'}</div>
+      <div class="row" style="margin-top:6px">${isExco() ? '' : own ? `<span class="note">For ${esc(d.name)}'s members only.</span>` : `<button class="btn sm ${mine ? '' : 'ok'}" data-act="signup" data-id="${e.id}">${mine ? 'Withdraw' : 'Sign up'}</button>`}<button class="link" data-act="eventPage">Event page →</button></div></div>`;
+  }).join('')}</div>`;
+}
+function offers(d) {
+  const out = [];
+  if (d.key === 'media') out.push(
+    { k: 'ask', t: 'Ask Media for content', h: offerAsk() },
+    { k: 'brand', t: 'Brand kit', h: offerBrand() },
+    { k: 'templates', t: 'Templates', h: offerTemplates() },
+    { k: 'coverage', t: 'Coverage log', h: offerCoverage() },
+    { k: 'library', t: 'Photo & video library', h: offerLibrary() });
+  out.push({ k: 'events', t: 'Events', h: eventsBlock(d) });
+  return out;
+}
+
+// ---- the rooms behind the front page ----
+function roomBody(d, r) {
+  const ro = !canWrite(d) && canEnter(d) ? `<div class="flag" style="margin-top:0"><b>Read only.</b> You're inactive in ${esc(d.name)} — ${esc(nm(d.head))} can clear it. You see everything here and change nothing.</div>` : '';
+  switch (r) {
+    case 'uc': return roomUC(d);
+    case 'scheduler': return ro + roomScheduler(d);
+    case 'board': return ro + roomBoard(d);
+    case 'calendar': return roomCalendar(d);
+    case 'tasks': return ro + roomTasks(d);
+    case 'tracker': return roomTracker(d);
+    case 'reports': return roomReports(d);
+  }
+  return '';
+}
+function roomUC(d) {
+  return `<div class="card tint-teal" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><div class="circles" aria-hidden="true"></div><div style="flex:1;min-width:240px">
+    <p class="eyebrow">Under construction</p><h2 class="title">${esc(d.name)}'s own work isn't built yet<span class="dot">.</span></h2>
+    <p class="lede">It's in the model and on its way. Until it lands, ${esc(d.name)} runs from its front page, ${d.head ? esc(nm(d.head)) + "'s" : 'its Head\'s'} Dashboard and the OKRs Hub. The Department tracker and Reports already work.</p>
+    <div class="row"><button class="btn sm" data-act="room" data-room="tracker">Department tracker</button>${canReadReports(d) ? '<button class="btn sm" data-act="room" data-room="reports">Reports</button>' : ''}${isExco() ? '<button class="btn quiet sm" data-act="liftUC">Lift the mark (Exco)</button>' : ''}</div></div></div>`;
+}
+function reqCard(r) {
+  const answering = UI.answering === r.id, declining = UI.declining === r.id;
+  return `<div class="li pink"><div class="row"><b class="strong">${esc(r.tag)}</b><span class="chip grey">${r.type}</span>${r.branch ? `<span class="chip">${esc(r.branch)}</span>` : ''}<span class="grow"></span><span class="note">asked ${fmt(r.on)}</span></div>
+    <p class="sm" style="margin:6px 0">${esc(r.desc)}</p>
+    <div class="kv">From <b>${esc(nm(r.by))}</b> · wanted <b>${fmt(r.wanted)}</b> · ${r.ch.join(', ')}</div>
+    ${canAnswer() ? (answering ? `<div class="row" style="margin-top:10px"><label class="f">Scheduled publish date — your promise<input type="date" id="sch-${r.id}" value="${r.wanted}"></label><span class="note" style="align-self:end">The date wanted stays on the card beside it.</span></div><div class="row" style="margin-top:8px"><button class="btn ok sm" data-act="doAccept" data-id="${r.id}">Accept onto the tracker</button><button class="btn quiet sm" data-act="cancelAns">Cancel</button></div>`
+      : declining ? `<div style="margin-top:10px"><label class="f">Why not? (they'll see this)<textarea id="dec-${r.id}"></textarea></label><div class="row" style="margin-top:8px"><button class="btn red sm" data-act="doDecline" data-id="${r.id}">Decline</button><button class="btn quiet sm" data-act="cancelAns">Cancel</button></div></div>`
+      : `<div class="row" style="margin-top:10px"><button class="btn ok sm" data-act="accept" data-id="${r.id}">Accept…</button><button class="btn sm" data-act="decline" data-id="${r.id}">Decline…</button></div>`) : ''}
+  </div>`;
+}
+function roomScheduler(d) {
+  return `<div class="row" style="margin-bottom:10px"><h3 class="title grow">Waiting to be answered <span class="num pink">${DB.pending.length}</span></h3>${canWrite(d) && standing(d) !== 'reads' ? '<button class="btn sm" data-act="direct">+ Create content directly</button>' : ''}</div>
+  <p class="sm" style="margin:0 0 12px">Every request stands on every Media member until one of you accepts or declines it. Answering clears it for all of you. Nothing lapses.</p>
+  ${DB.pending.length ? `<div class="list">${DB.pending.map(reqCard).join('')}</div>` : '<div class="empty">Nothing waiting. Every request has an answer.</div>'}
+  ${isExco() ? '<div class="flag"><b>Open question.</b> Should National Exco answer Content Requests? They write here as backstop to the Head, but answering is the members\' shared duty. This prototype lets them.</div>' : ''}
+  <h3 class="title" style="margin:22px 0 8px">Declined</h3>
+  <div class="list">${DB.declinedReq.map(x => `<div class="li sm"><b class="strong">${esc(x.tag)}</b> <span class="note">· from ${esc(nm(x.by))} · ${fmt(x.on)}</span><div class="note">“${esc(x.reason)}”</div></div>`).join('')}</div>`;
+}
+function dateLine(c) {
+  if (!c.wanted) return `<div class="dates">Scheduled <b>${fmt(c.sched)}</b> · made directly</div>`;
+  const slip = days(c.wanted, c.sched);
+  return `<div class="dates">Wanted ${slip ? `<s>${fmt(c.wanted)}</s>` : fmt(c.wanted)} → scheduled <b>${fmt(c.sched)}</b>${slip > 0 ? ` <span class="slip">+${slip} days</span>` : ''}</div>`;
+}
+function kcard(c) {
+  const o = overdue(c); const done = c.tasks.filter(t => t.done).length;
+  return `<div class="kcard ${o ? 'over' : ''}" data-act="openCard" data-id="${c.id}" tabindex="0">
+    <div class="t">${esc(c.tag)}</div>${dateLine(c)}
+    <div class="row xs">${o ? '<span class="chip red">Overdue</span>' : ''}<span class="chip grey">${c.type}</span>${c.branch ? `<span class="chip">${esc(c.branch)}</span>` : ''}</div>
+    ${c.blocked ? `<div class="blocked">⏸ Blocked — ${esc(c.blocked)}</div>` : ''}
+    <div class="row"><span class="avs">${c.opted.map(p => av(p, 'sm')).join('') || '<span class="note xs">Nobody opted in</span>'}</span><span class="grow"></span>${c.tasks.length ? `<span class="note xs">${done}/${c.tasks.length} tasks</span>` : ''}</div></div>`;
+}
+function roomBoard(d) {
+  const cards = DB.cards.filter(c => !UI.branchFilter || c.branch === UI.branchFilter);
+  const branches = [...new Set(DB.cards.map(c => c.branch).filter(Boolean))];
+  return `<div class="row" style="margin-bottom:12px"><h3 class="title grow">Content tracker</h3>
+    <select data-act="branchFilter"><option value="">All content</option>${branches.map(b => `<option ${UI.branchFilter === b ? 'selected' : ''} value="${b}">Tagged ${b}</option>`).join('')}</select>
+    ${canWrite(d) && standing(d) !== 'reads' ? '<button class="btn sm" data-act="direct">+ Create content directly</button>' : ''}</div>
+  <p class="note" style="margin:-4px 0 12px">A <b>Board</b>: each card is an accepted Content Request; its Tasks sit inside it. Open a card to see them. The people opted in and ${esc(nm(d.head))} move cards — by hand, nothing moves itself.</p>
+  <div class="board">${COLS.map(col => { const cs = cards.filter(c => c.col === col); return `<div class="col"><h4>${col}<span>${cs.length}</span></h4>${cs.map(kcard).join('')}</div>`; }).join('')}</div>`;
+}
+function roomCalendar(d) {
+  const m = UI.calMonth, y = 2026; const first = new Date(y, m, 1); const off = (first.getDay() + 6) % 7; const n = new Date(y, m + 1, 0).getDate();
+  const iso = dd => `${y}-${String(m + 1).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  const cells = [];
+  for (let i = 0; i < off; i++) cells.push('<div class="d out"></div>');
+  for (let dd = 1; dd <= n; dd++) {
+    const k = iso(dd);
+    const evs = DB.cards.filter(c => c.sched === k).map(c => `<div class="ev ${c.col === 'Published' ? 'pub' : overdue(c) ? 'over' : ''}" data-act="openCard" data-id="${c.id}">${esc(c.tag)}${c.wanted && c.wanted !== c.sched ? `<small>asked for ${fmt(c.wanted)}</small>` : ''}</div>`);
+    const gh = UI.ghosts ? DB.cards.filter(c => c.wanted === k && c.wanted !== c.sched).map(c => `<div class="ev ghost">${esc(c.tag)}<small>wanted, not promised</small></div>`) : [];
+    cells.push(`<div class="d ${k === TODAY ? 'today' : ''}"><span class="n">${dd}</span>${evs.join('')}${gh.join('')}</div>`);
+  }
+  while (cells.length % 7) cells.push('<div class="d out"></div>');
+  return `<div class="row" style="margin-bottom:12px"><h3 class="title grow">${first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</h3>
+    <button class="btn sm" data-act="calPrev" ${m <= 10 ? 'disabled' : ''}>←</button><button class="btn sm" data-act="calNext" ${m >= 11 ? 'disabled' : ''}>→</button>
+    <label class="sm row" style="gap:5px"><input type="checkbox" data-act="ghosts" ${UI.ghosts ? 'checked' : ''}> What if it plotted dates wanted?</label></div>
+  <p class="note" style="margin:-4px 0 12px">The calendar plots <b>scheduled</b> publish dates only — what Media promised. Where a date slipped, the card says what was asked for.</p>
+  ${UI.ghosts ? `<div class="flag" style="margin-top:0"><b>Why it never does this.</b> Turned on, the dashed chips are dates <i>wanted</i>. On 15 Nov you'd see “Recruitment drive reel” — a date nobody in Media agreed to, now passed, with nothing to show it slipped. Two dates for one piece of work means a calendar nobody can plan from. The asked date lives on the card instead.</div>` : ''}
+  <div class="cal">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(x => `<div class="h">${x}</div>`).join('')}${cells.join('')}</div>`;
+}
+function taskRow(t, c) {
+  const mine = t.owner === me() && canWrite(dept('media'));
+  return `<div class="task ${t.done ? 'done' : ''}"><input type="checkbox" ${t.done ? 'checked' : ''} ${mine ? '' : 'disabled'} data-act="tick" data-card="${c.id}" data-id="${t.id}" aria-label="Done">
+    <div><span class="tt">${esc(t.t)}</span> <span class="imp ${t.imp < 2 ? 'lo' : ''}" title="Importance ${t.imp} of 3">${'●'.repeat(t.imp)}${'○'.repeat(3 - t.imp)}</span><div class="note xs">${esc(nm(t.owner))}${c ? '' : ''}</div></div>
+    <span class="note xs ${t.due && t.due < TODAY && !t.done ? 'red' : ''}">${t.due ? fmt(t.due) : 'no date'}</span></div>`;
+}
+function roomTasks(d) {
+  const mine = DB.cards.flatMap(c => c.tasks.filter(t => t.owner === me()).map(t => [t, c])).sort((a, b) => (a[0].done - b[0].done) || (b[0].imp - a[0].imp));
+  const seesAll = ['head', 'reads'].includes(standing(d));
+  const yours = standing(d) === 'reads' ? '' : `<h3 class="title" style="margin-bottom:8px">Your Tasks</h3>
+    <p class="note" style="margin:0 0 10px">Nobody assigns a Task in Media: you opt in to a Content Request and write your own. Importance is your own ordering. Only dated Tasks reach your Dashboard.</p>
+    ${mine.length ? `<div class="card" style="padding:8px 16px">${mine.map(([t, c]) => `${taskRow(t, c)}<div class="note xs" style="margin:-4px 0 4px 28px">under <button class="link xs" data-act="openCard" data-id="${c.id}">${esc(c.tag)}</button></div>`).join('')}</div>` : '<div class="empty">No Tasks yet. Opt in to a card on the content tracker, then add your own.</div>'}`;
+  const all = seesAll ? `<h3 class="title" style="margin:22px 0 8px">Every Task, by Content Request</h3>
+    <p class="note" style="margin:0 0 10px">${standing(d) === 'head' ? 'As Head you see what your members are doing.' : 'Exco read everything.'} Grouped by the work, not by the person.</p>
+    <div class="stack">${DB.cards.filter(c => c.tasks.length).map(c => `<div class="card" style="padding:10px 16px"><button class="link" data-act="openCard" data-id="${c.id}">${esc(c.tag)}</button>${c.tasks.map(t => taskRow(t, c)).join('')}</div>`).join('')}</div>` : '';
+  return yours + all;
+}
+function roomTracker(d) {
+  const w = canRunTracker(d) && (d.head || isExco());
+  const t = d.tracker;
+  return `<div class="row" style="margin-bottom:6px"><h3 class="title grow">Department tracker</h3><span class="note">${d.head ? `Written by ${esc(nm(d.head))}` : 'No Head — Exco alone may write it'}${isExco() && d.head ? ' · you write as backstop' : ''}</span></div>
+  <p class="note" style="margin:0 0 12px">Follows ${d.head ? esc(nm(d.head)) + "'s" : 'the Head\'s'} MOU. Nothing here is computed or chased: nothing goes red, nothing reaches a Dashboard.${d.uc ? ' Live even while the rest is under construction.' : ''}</p>
+  <div class="card" style="margin-bottom:14px"><p class="card-label">KPIs</p>${t.kpis.length ? t.kpis.map((k, i) => `<div class="kpi"><b class="strong">${esc(k.n)}</b><div class="meter"><i style="width:${Math.min(100, Math.round(k.cur / k.tgt * 100))}%"></i></div><span class="mono sm">${w ? `<input type="number" value="${k.cur}" data-act="kpi" data-i="${i}" aria-label="Current">` : `<b class="strong">${k.cur}</b>`} / ${k.tgt}</span></div>`).join('') : '<p class="note">None yet.</p>'}</div>
+  <div class="grid2"><div class="card pink"><p class="card-label">Milestones</p>${t.ms.length ? t.ms.map((m, i) => `<div class="task ${m.done ? 'done' : ''}"><input type="checkbox" ${m.done ? 'checked' : ''} ${w ? '' : 'disabled'} data-act="ms" data-i="${i}"><span class="tt">${esc(m.n)}</span><span class="note xs">${fmt(m.on)}</span></div>`).join('') : '<p class="note">None yet.</p>'}</div>
+  <div class="card"><p class="card-label">Deliverables</p>${t.dl.length ? t.dl.map(x => `<div class="task" style="grid-template-columns:1fr auto"><span>${esc(x.n)}</span><span class="mono sm"><b class="strong">${x.act}</b> of ${x.plan} planned</span></div>`).join('') : '<p class="note">None yet.</p>'}</div></div>`;
+}
+function roomReports(d) {
+  if (!canReadReports(d)) return `<div class="empty">${LOCK} Reports are ${esc(nm(d.head) || 'the Head')}'s account upward — read by the Head, the General Liaison and National Exco only.</div>`;
+  return `<div class="row" style="margin-bottom:6px"><h3 class="title grow">Department reports</h3>${canWriteReports(d) && !UI.writingReport ? '<button class="btn primary sm" data-act="writeReport">Write a report</button>' : ''}</div>
+  <p class="note" style="margin:0 0 12px">${d.head ? esc(nm(d.head)) : 'The Head'}'s account to Exco. Owes no date; nothing goes red. Each new one waits on the General Liaison's Dashboard until opened. Read by the Head, the General Liaison and National Exco — not by members.</p>
+  ${UI.writingReport ? `<div class="card pink" style="margin-bottom:14px"><textarea id="rep-text" placeholder="What happened, what's next, what Exco should know"></textarea><div class="row" style="margin-top:8px"><button class="btn primary sm" data-act="saveReport">Send</button><button class="btn quiet sm" data-act="cancelReport">Cancel</button></div></div>` : ''}
+  ${d.reports.length ? `<div class="list">${d.reports.map(r => `<div class="li"><div class="kv"><b>${fmt(r.on)}</b> · ${esc(nm(d.head) || 'Exco')}</div><p class="sm" style="margin:4px 0 0">${esc(r.text)}</p></div>`).join('')}</div>` : '<div class="empty">No reports yet.</div>'}`;
+}
+
+// ---- the card drawer (a Content Request with its Tasks) ----
+function drawer() {
+  const c = DB.cards.find(x => x.id === UI.card); if (!c) return '';
+  const opted = c.opted.includes(me()); const mv = canMove(c);
+  const myTasks = c.tasks.filter(t => t.owner === me());
+  return `<div class="scrim" data-act="closeCard"><div class="drawer ${UI.cardAnim ? 'anim' : ''}" role="dialog" aria-modal="true" aria-label="${esc(c.tag)}" data-stop>
+    <div class="row"><span class="chip ${c.col === 'Published' ? 'grey' : ''}">${c.col}</span>${overdue(c) ? '<span class="chip red">Overdue</span>' : ''}<span class="grow"></span><button class="btn quiet sm" data-act="closeCard">Close ✕</button></div>
+    <h2 class="title" style="margin:10px 0 4px">${esc(c.tag)}</h2>
+    <p class="sm" style="margin:0 0 12px">${esc(c.desc)}</p>
+    <dl class="fields"><dt>Requested by</dt><dd>${c.by ? esc(nm(c.by)) : '<span class="note">Nobody — made directly by Media</span>'}</dd>
+      <dt>Date wanted</dt><dd>${c.wanted ? fmt(c.wanted) : '—'}</dd>
+      <dt>Scheduled</dt><dd>${fmt(c.sched)} ${c.wanted && days(c.wanted, c.sched) > 0 ? `<span class="chip pink">slipped ${days(c.wanted, c.sched)} days</span>` : ''}</dd>
+      <dt>Accepted by</dt><dd>${esc(nm(c.acceptedBy))}</dd><dt>Type · channels</dt><dd>${c.type} · ${c.ch.join(', ')}</dd>${c.branch ? `<dt>Tagged</dt><dd>${esc(c.branch)}</dd>` : ''}</dl>
+    ${overdue(c) ? `<div class="flag" style="border-color:#F3C3BE;background:#FFFBFA;color:#7a1a12"><b style="color:#B42318">Overdue</b> — red on ${redOn(c).map(nm).map(esc).join(', ')}${c.opted.length ? ' (everyone opted in)' : ' (who accepted it — nobody has opted in)'}.</div>` : ''}
+    <hr class="hr">
+    <p class="card-label">Moving it</p>
+    ${mv ? `<div class="row">${COLS.map(col => `<button class="btn sm ${c.col === col ? 'primary' : ''}" data-act="move" data-id="${c.id}" data-col="${col}">${col}</button>`).join('')}</div>
+      <div class="row" style="margin-top:8px">${c.blocked ? `<span class="blocked">⏸ ${esc(c.blocked)}</span><button class="link" data-act="unblock" data-id="${c.id}">Clear blocked</button>` : `<button class="link" data-act="block" data-id="${c.id}">Flag as blocked…</button>`}</div>
+      ${c.col !== 'Published' ? '<p class="note">Published is set by hand, after you post. The platform posts nowhere.</p>' : ''}`
+      : `<p class="note">${standing(dept('media')) === 'inactive' ? "You're inactive, so you can't move cards." : canEnter(dept('media')) ? 'Only the people opted in and the Head move this card. Opt in to work on it.' : ''}</p>${c.blocked ? `<span class="blocked">⏸ ${esc(c.blocked)}</span>` : ''}`}
+    <hr class="hr">
+    <div class="row"><p class="card-label grow" style="margin:0">Opted in</p>${canOpt() ? `<button class="btn sm ${opted ? '' : 'ok'}" data-act="opt" data-id="${c.id}">${opted ? 'Opt out' : 'Opt in'}</button>` : ''}</div>
+    <div class="row" style="margin:8px 0">${c.opted.length ? c.opted.map(p => `<span class="row" style="gap:5px">${av(p, 'sm')}<span class="sm">${esc(nm(p))}</span></span>`).join('') : '<span class="note">Nobody yet. Opting in needs no approval.</span>'}</div>
+    <hr class="hr">
+    <p class="card-label">Tasks</p>
+    <p class="note" style="margin:-4px 0 6px">Each person writes their own, under this request. Nobody assigns one.</p>
+    ${c.tasks.length ? c.tasks.slice().sort((a, b) => b.imp - a.imp).map(t => taskRow(t, c)).join('') : '<p class="note">No Tasks yet.</p>'}
+    ${opted && canWrite(dept('media')) ? (UI.adding === c.id ? `<div class="card tint-teal" style="margin-top:10px;padding:12px"><div class="stack" style="gap:8px"><label class="f">Your Task<input type="text" id="tk-t" placeholder="e.g. Write captions"></label><div class="row"><label class="f">Importance<select id="tk-imp"><option value="1">● low</option><option value="2" selected>●● medium</option><option value="3">●●● high</option></select></label><label class="f">Due (optional — dated ones reach your Dashboard)<input type="date" id="tk-due"></label></div><div class="row"><button class="btn ok sm" data-act="saveTask" data-id="${c.id}">Add</button><button class="btn quiet sm" data-act="cancelTask">Cancel</button></div></div></div>` : `<button class="btn sm" style="margin-top:10px" data-act="addTask" data-id="${c.id}">+ Add a Task of yours</button>`) : ''}
+    ${myTasks.length && !opted ? '<p class="note">You have Tasks here but have opted out.</p>' : ''}
+  </div></div>`;
+}
+
+// ---- the Dashboard: only the Departments' share of it is drawn ----
+function renderDash() {
+  const s = me(); const out = [];
+  out.push(`<p class="eyebrow">Your Dashboard</p><h1 class="title" style="font-size:32px;margin-bottom:6px">Good morning, ${esc(nm(s).split(' ')[0])}<span class="dot">.</span></h1><p class="note" style="margin:0 0 18px">Only what the Departments put here is drawn. The rest of the Dashboard is #35's.</p>`);
+  // who you are
+  out.push(`<div class="card" style="margin-bottom:14px"><p class="card-label">Your Departments</p><div class="row">${DB.depts.map(d => `<button class="btn sm" data-act="go" data-page="${d.key}">${esc(d.name)} · ${STAND_TXT[standing(d)][0]}</button>`).join('')}</div></div>`);
+  // waiting on others
+  const asks = DB.depts.filter(d => standing(d) === 'pending'), invs = DB.depts.filter(d => standing(d) === 'invited');
+  if (asks.length || invs.length) out.push(`<div class="card pink" style="margin-bottom:14px"><p class="card-label">Waiting on an answer</p><div class="list">${asks.map(d => `<div class="li row"><span class="sm">You asked to join <b class="strong">${esc(d.name)}</b> · ${fmt(d.requests.find(r => r.who === s).on)}</span><span class="grow"></span><button class="btn sm" data-act="withdrawJoinD" data-k="${d.key}">Withdraw</button></div>`).join('')}${invs.map(d => `<div class="li row"><span class="sm">${esc(nm(d.head))} invited you to <b class="strong">${esc(d.name)}</b></span><span class="grow"></span><button class="btn ok sm" data-act="acceptInviteD" data-k="${d.key}">Accept</button><button class="btn sm" data-act="declineInviteD" data-k="${d.key}">Decline</button></div>`).join('')}</div></div>`);
+  // Head: management
+  const headed = DB.depts.filter(d => d.members[s] === 'head');
+  if (headed.length) {
+    out.push(`<h2 class="title" style="margin:22px 0 4px">Running your Departments</h2><p class="note" style="margin:0 0 12px">Membership lives here, not in the hubs. You head ${headed.length === 1 ? 'one' : headed.length} — each gets its own panel.</p><div class="grid2" style="margin-bottom:14px">${headed.map(manage).join('')}</div>`);
+    out.push(`<div class="flag"><b>Open question.</b> The member list sits only here, for the Head. Fellow members see one another only on shared work (a card's opted-in faces). If a visible roster for members seems wanted, prototype it first — none is drawn.</div>`);
+  }
+  // Media duties
+  const md = dept('media');
+  if (['head', 'active'].includes(standing(md))) {
+    const red = DB.cards.filter(c => redOn(c).includes(s));
+    out.push(`<div class="card" style="margin-bottom:14px"><p class="card-label">Media</p><div class="list">
+      ${DB.pending.length ? `<div class="li row pink"><span class="sm"><b class="strong">${DB.pending.length} Content Requests</b> waiting to be answered — on every member until one of you does</span><span class="grow"></span><button class="btn sm" data-act="goRoom" data-k="media" data-room="scheduler">Answer</button></div>` : ''}
+      ${red.map(c => `<div class="li red row"><span class="sm"><span class="red"><b>Overdue</b></span> · ${esc(c.tag)} · scheduled ${fmt(c.sched)}</span><span class="grow"></span><button class="btn sm" data-act="openCard" data-id="${c.id}">Open</button></div>`).join('')}
+      ${DB.cards.flatMap(c => c.tasks.filter(t => t.owner === s && t.due && !t.done).map(t => `<div class="li row"><span class="sm">${esc(t.t)} <span class="note">· under ${esc(c.tag)}</span></span><span class="grow"></span><span class="note ${t.due < TODAY ? 'red' : ''}">${fmt(t.due)}</span></div>`)).join('')}
+    </div></div>`);
+  } else if (standing(md) === 'inactive') out.push(`<div class="card" style="margin-bottom:14px"><p class="card-label">Media</p><p class="note" style="margin:0">You're inactive in Media, so its requests and dates don't land on you. You can still go in and read.</p></div>`);
+  // your requests
+  const mine = [...DB.pending.filter(r => r.by === s).map(r => [r.tag, 'Waiting for an answer', 'amber', `wanted ${fmt(r.wanted)}`]),
+    ...DB.cards.filter(c => c.by === s && c.col !== 'Published').map(c => [c.tag, `Accepted · ${c.col}`, '', `wanted ${fmt(c.wanted)} · scheduled ${fmt(c.sched)}${days(c.wanted, c.sched) > 0 ? ' (slipped)' : ''}`])];
+  out.push(`<div class="card" style="margin-bottom:14px"><p class="card-label">Content you asked Media for</p>${mine.length ? `<div class="list">${mine.map(([t, st, cl, sub]) => `<div class="li row"><b class="strong sm">${esc(t)}</b><span class="chip ${cl}">${st}</span><span class="grow"></span><span class="note">${sub}</span></div>`).join('')}</div>` : '<p class="note" style="margin:0">Nothing live. <button class="link" data-act="go" data-page="media">Ask Media →</button></p>'}
+    ${DB.declinedReq.some(x => x.by === s) ? `<div class="flag"><b>Open question.</b> A declined request leaves your Dashboard — but how does its reason reach you? Drawn here once: “${esc(DB.declinedReq.find(x => x.by === s).reason)}”</div>` : ''}</div>`);
+  // events
+  const evs = DB.depts.flatMap(d => d.events.filter(e => e.signed.includes(s)).map(e => [d, e]));
+  if (evs.length) out.push(`<div class="card pink"><p class="card-label">Events you're signed up to</p>${evs.map(([d, e]) => `<div class="li row" style="margin-bottom:6px"><b class="strong sm">${esc(e.name)}</b><span class="note">${esc(d.name)} · ${fmt(e.on)}</span></div>`).join('')}</div>`);
+  return out.join('');
+}
+function manage(d) {
+  const mem = Object.entries(d.members);
+  const outsiders = Object.keys(PEOPLE).filter(p => !d.members[p] && !d.invites.some(i => i.who === p) && !d.requests.some(r => r.who === p) && p !== 'sipho');
+  return `<div class="card ${d.key === 'media' ? '' : 'pink'}">
+    <div class="row"><h3 class="title grow">${esc(d.name)}</h3>${ucChip(d)}<button class="link" data-act="go" data-page="${d.key}">Open hub →</button></div>
+    <p class="card-label" style="margin:14px 0 6px">Asking to join <span class="num ${d.requests.length ? 'pink' : ''}">${d.requests.length}</span></p>
+    ${d.requests.length ? d.requests.map(r => UI.declineJoin === d.key + ':' + r.who
+      ? `<div class="li"><b class="strong sm">${esc(nm(r.who))}</b><label class="f" style="margin-top:6px">Reason (optional)<textarea id="dj-${d.key}-${r.who}"></textarea></label><div class="row" style="margin-top:6px"><button class="btn red sm" data-act="doDeclineJoin" data-k="${d.key}" data-who="${r.who}">Decline</button><button class="btn quiet sm" data-act="cancelDJ">Cancel</button></div></div>`
+      : `<div class="li row" style="margin-bottom:6px">${av(r.who, 'sm')}<span class="sm"><b class="strong">${esc(nm(r.who))}</b> <span class="note">· ${esc(PEOPLE[r.who][1] || 'no branch')} · asked ${fmt(r.on)}</span></span><span class="grow"></span><button class="btn ok sm" data-act="approveJoin" data-k="${d.key}" data-who="${r.who}">Admit</button><button class="btn sm" data-act="declineJoin" data-k="${d.key}" data-who="${r.who}">Decline…</button></div>`).join('') : '<p class="note" style="margin:0">Nobody waiting.</p>'}
+    <p class="card-label" style="margin:14px 0 6px">Invitations you've sent</p>
+    ${d.invites.length ? d.invites.map(i => `<div class="li row" style="margin-bottom:6px">${av(i.who, 'sm')}<span class="sm">${esc(nm(i.who))} <span class="note">· ${fmt(i.on)} · not answered</span></span><span class="grow"></span><button class="btn quiet sm" data-act="withdrawInv" data-k="${d.key}" data-who="${i.who}">Withdraw</button></div>`).join('') : '<p class="note" style="margin:0 0 6px">None out.</p>'}
+    <div class="row"><select id="inv-${d.key}"><option value="">Invite a volunteer…</option>${outsiders.map(p => `<option value="${p}">${esc(nm(p))} · ${esc(PEOPLE[p][1] || 'no branch')}</option>`).join('')}</select><button class="btn sm" data-act="invite" data-k="${d.key}">Invite</button></div>
+    <p class="card-label" style="margin:14px 0 6px">Members <span class="num">${mem.length}</span></p>
+    ${mem.map(([p, st]) => `<div class="li row" style="margin-bottom:6px">${av(p, 'sm' + (st === 'deactivated' ? ' gone' : ''))}<span class="sm grow"><b class="strong">${esc(nm(p))}</b> <span class="note">· ${esc(PEOPLE[p][1] || 'no branch')}</span></span>
+      ${st === 'head' ? '<span class="chip pink">Head</span>' : st === 'deactivated' ? '<span class="chip grey" title="Deactivated by their branch. Their membership returns if reactivated; you cannot undo it.">Account deactivated</span>'
+        : `<label class="sm row" style="gap:4px"><input type="checkbox" ${st === 'inactive' ? 'checked' : ''} data-act="inactive" data-k="${d.key}" data-who="${p}"> Inactive</label><button class="btn quiet sm" data-act="remove" data-k="${d.key}" data-who="${p}">Remove</button>`}</div>`).join('')}
+  </div>`;
+}
+
+// =====================================================================
+// directory — three takes
+// =====================================================================
+function addDeptCtl() {
+  if (!isExco()) return '';
+  return UI.addingDept ? `<div class="card tint-pink row" style="margin-top:14px"><label class="f grow">A name is all it takes. It arrives with No Head yet.<input type="text" id="nd-name" placeholder="e.g. Advocacy"></label><button class="btn primary sm" data-act="saveDept">Add</button><button class="btn quiet sm" data-act="cancelDept">Cancel</button></div>`
+    : `<button class="btn sm" style="margin-top:14px" data-act="addDept">+ Add a Department (Exco)</button>`;
+}
+function dirIntro() { return `<p class="eyebrow">National Centre</p><h1 class="title" style="margin-bottom:6px">Departments<span class="dot">.</span></h1><p class="lede" style="margin:0 0 18px">Save7's specialised work, run nationally. Anyone can read a Department's front page. Members, the Head and Exco go in.</p>`; }
+function dirA() {
+  return dirIntro() + `<div class="A-dir">${DB.depts.map(d => `<div class="A-drow" data-act="go" data-page="${d.key}">
+    <div><h2 class="title">${esc(d.name)}<span class="dot">.</span></h2><div class="row" style="margin-top:4px">${ucChip(d)}</div></div>
+    <div style="display:grid;gap:6px"><div class="sm">${forLine(d)}</div>${objLine(d)}<div class="row">${headLine(d)}${reportedLine(d)}</div></div>
+    <div style="display:grid;gap:8px;justify-items:end">${standChip(d)}<span class="link">Front page →</span></div></div>`).join('')}</div>` + addDeptCtl();
+}
+function dirB() {
+  return dirIntro() + `<div class="B-dir">${DB.depts.map(d => `<div class="B-dcard" data-act="go" data-page="${d.key}"><div class="circles" aria-hidden="true"></div>
+    <div class="row"><h2 class="title grow">${esc(d.name)}</h2>${standChip(d)}</div><div class="row">${ucChip(d)}${headLine(d)}</div>
+    <div class="sm">${forLine(d)}</div><div><div class="kv" style="margin-bottom:4px"><b>Working on</b></div>${objLine(d)}</div><div class="row">${reportedLine(d)}<span class="grow"></span><span class="link">Open →</span></div></div>`).join('')}</div>` + addDeptCtl();
+}
+function dirC() {
+  return dirIntro() + `<table class="C-table"><thead><tr><th>Department</th><th>Head</th><th>What it's for</th><th>Working on</th><th>Reported</th><th>You</th></tr></thead><tbody>${DB.depts.map(d => `<tr class="click" data-act="go" data-page="${d.key}">
+    <td><b class="strong">${esc(d.name)}</b><div>${ucChip(d)}</div></td><td class="sm">${d.head ? esc(nm(d.head)) : '<i>No Head yet</i>'}</td><td class="sm">${forLine(d)}</td><td>${objLine(d)}</td><td class="sm">${d.lastReport ? fmt(d.lastReport) : 'never'}</td><td>${standChip(d)}</td></tr>`).join('')}</tbody></table>` + addDeptCtl();
+}
+
+// =====================================================================
+// a Department's hub — three takes
+// =====================================================================
+// ---- A: Doorway ----
+function deptA(d) {
+  if (UI.inside) {
+    const rooms = roomsFor(d).filter(r => r.ok);   // gated rooms are hidden, as hubs are
+    return `<div class="A-inside"><div class="A-ihead"><button class="back" data-act="out">← ${esc(d.name)}'s front page</button>
+      <h2 class="title">Inside ${esc(d.name)}</h2><div class="sm">${standing(d) === 'reads' ? 'Reading as National Exco' : standing(d) === 'inactive' ? 'Inactive — reading only' : standing(d) === 'head' ? 'You head it' : 'Member'}</div>
+      <div class="A-rooms" role="tablist">${rooms.map(r => `<button role="tab" aria-selected="${UI.room === r.k}" data-act="room" data-room="${r.k}">${ROOM[r.k]}${r.k === 'scheduler' && DB.pending.length ? ` <span class="num pink" style="padding:1px 7px">${DB.pending.length}</span>` : ''}</button>`).join('')}</div></div>
+      <div class="A-ibody">${roomBody(d, UI.room)}
+      ${UI.room === 'tracker' && !canReadReports(d) ? '<div class="flag"><b>Open question.</b> In this take, a page you can\'t read is simply not there — Reports is missing from your tabs, the way a hub you can\'t open is missing from the nav. Hidden, disabled, or visibly locked? Take B shows it locked.</div>' : ''}</div></div>`;
+  }
+  const rooms = roomsFor(d);
+  const enter = canEnter(d);
+  const door = enter
+    ? `<div class="A-door"><div><p class="eyebrow" style="color:var(--amber)">Behind this page</p><h3>${d.uc ? `${esc(d.name)}'s own work — under construction` : `${esc(d.name)}'s own work`}</h3></div>
+       <div class="rooms">${rooms.map(r => `<span class="${r.ok ? '' : 'x'}">${ROOM[r.k]}</span>`).join('')}</div>
+       <button class="A-enter" data-act="enter">Enter ${esc(d.name)} <span class="arr">→</span></button>
+       ${standing(d) === 'inactive' ? '<span class="sm" style="position:relative;z-index:1">You\'re inactive: you can read, not write.</span>' : ''}</div>`
+    : `<div class="A-door shut"><div><p class="eyebrow">Behind this page</p><h3>${esc(d.name)}'s own work is for its members.</h3><p class="sm" style="margin:6px 0 0">You're reading the front page — everything here is yours to use.</p></div>${joinControl(d)}</div>`;
+  const ofs = offers(d);
+  return `<div class="A-hero"><div class="A-front"><div class="circles" aria-hidden="true"></div><p class="eyebrow">Departments</p><h1 class="title">${esc(d.name)}<span class="dot">.</span></h1>
+      <div class="row" style="margin:8px 0">${ucChip(d)}${headLine(d)}${reportedLine(d)}</div><p class="lede" style="margin:0 0 12px;max-width:52ch">${forLine(d)}</p>
+      <div class="kv" style="margin-bottom:6px"><b>Working on</b></div>${objLine(d)}
+      ${enter ? `<div style="margin-top:14px">${joinControl(d)}</div>` : ''}</div>${door}</div>
+    <div class="A-offers">${ofs.map((o, i) => `<div class="card ${o.k === 'ask' ? 'wide tint-pink' : ''}"><p class="card-label">${o.t}</p>${o.h}</div>`).join('')}</div>
+    ${d.uc && !enter ? `<p class="note" style="margin-top:14px">Behind this page, ${esc(d.name)}'s own work is under construction. The front page — joining included — works now.</p>` : ''}`;
+}
+// ---- B: Two sides ----
+function deptB(d) {
+  const rooms = roomsFor(d);
+  if (UI.inside) {
+    return `<div class="B-in ${UI.justEntered ? 'anim' : ''}"><div class="B-rail" data-act="out" title="Back to the front page" role="button" tabindex="0"><span class="av p">${esc(d.name[0])}</span><span class="v">${esc(d.name)} <small>· front page</small></span></div>
+      <div class="B-work"><nav class="B-rooms">${rooms.map(r => r.ok
+        ? `<button aria-selected="${UI.room === r.k}" data-act="room" data-room="${r.k}">${ROOM[r.k]}${r.k === 'scheduler' && DB.pending.length ? `<span class="num pink" style="padding:1px 7px">${DB.pending.length}</span>` : ''}</button>`
+        : `<button class="locked" title="Head, General Liaison and Exco only" aria-disabled="true">${ROOM[r.k]} ${LOCK}</button>`).join('')}
+        ${rooms.some(r => !r.ok) ? '<div class="flag xs"><b>Open question.</b> This take shows a page you can\'t read, locked, so you know it exists. Take A and C hide it — the way a hub you can\'t open is hidden.</div>' : ''}</nav>
+      <div>${roomBody(d, UI.room)}</div></div></div>`;
+  }
+  const enter = canEnter(d);
+  const front = `<div class="B-front"><div><p class="eyebrow">Departments · front page</p><h1 class="title" style="font-size:36px">${esc(d.name)}<span class="dot">.</span></h1><div class="row" style="margin:6px 0">${ucChip(d)}${headLine(d)}${reportedLine(d)}</div><p class="sm" style="margin:0 0 8px">${forLine(d)}</p>${objLine(d)}</div>
+    ${enter ? `<div class="card" style="padding:14px 16px">${joinControl(d)}</div>` : ''}
+    ${offers(d).map((o, i) => `<details ${i === 0 ? 'open' : ''}><summary>${o.t}</summary><div>${o.h}</div></details>`).join('')}</div>`;
+  const panel = enter
+    ? `<div class="B-panel"><p class="eyebrow teal">The other side</p><h2 class="title">${d.uc ? 'Under construction — but the tracker and reports work' : `${esc(d.name)}'s own work`}</h2>
+       <div class="B-tiles">${rooms.map(r => r.ok ? `<button class="B-tile" data-act="enterRoom" data-room="${r.k}"><b>${ROOM[r.k]}</b><span class="note xs">${roomTeaser(d, r.k)}</span></button>` : `<div class="B-tile locked"><b>${ROOM[r.k]} ${LOCK}</b><span class="note xs">Head, General Liaison and Exco</span></div>`).join('')}</div>
+       <button class="btn primary" data-act="enter">Unlock and go in →</button>${standing(d) === 'inactive' ? '<span class="note" style="margin-left:8px">Read only — you\'re inactive.</span>' : ''}</div>`
+    : `<div class="B-panel locked"><p class="eyebrow">The other side</p><h2 class="title">${LOCK} For ${esc(d.name)}'s members</h2>
+       <p class="sm">You can see what's here; you can't open it.${d.uc ? ' It\'s under construction anyway.' : ''}</p>
+       <div class="B-tiles">${rooms.map(r => `<div class="B-tile locked"><b>${ROOM[r.k]} ${LOCK}</b><div class="ph"><i></i><i></i><i></i></div></div>`).join('')}</div>${joinControl(d)}</div>`;
+  return `<div class="B">${front}${panel}</div>`;
+}
+function roomTeaser(d, k) {
+  const t = { scheduler: `${DB.pending.length} waiting to be answered`, board: `${DB.cards.filter(c => c.col !== 'Published').length} cards live · ${DB.cards.filter(overdue).length} overdue`, calendar: 'Scheduled dates only', tasks: `${DB.cards.flatMap(c => c.tasks).filter(t => t.owner === me() && !t.done).length} open of yours`, tracker: `${d.tracker.kpis.length} KPIs · ${d.tracker.ms.length} milestones`, reports: `${d.reports.length} reports`, uc: 'Not built yet' };
+  return t[k];
+}
+// ---- C: In the nav ----
+function deptC(d) {
+  const enter = canEnter(d);
+  if (UI.inside) {
+    return `<div class="C-in-head"><h2 class="title">${ROOM[UI.room]}</h2><span class="badge">${esc(d.name)} · inside</span><span class="grow"></span><button class="link" data-act="out">${esc(d.name)} front page</button></div>${roomBody(d, UI.room)}
+    ${!canReadReports(d) && UI.room === 'tracker' ? '<div class="flag"><b>Open question.</b> In this take the pages behind the front page are listed in the nav once you go in, and the ones you can\'t read (Reports) are left out. Hidden, disabled or locked?</div>' : ''}`;
+  }
+  const ofs = offers(d); const cur = ofs.find(o => o.k === UI.offer) || ofs[0];
+  return `<div class="C-head"><div><p class="eyebrow">Departments</p><h1 class="title">${esc(d.name)}<span class="dot">.</span></h1></div>
+      <div style="display:grid;gap:4px"><div class="row">${ucChip(d)}${headLine(d)}${reportedLine(d)}</div><div class="sm" style="max-width:60ch">${forLine(d)}</div></div>
+      <div class="C-enter">${enter ? `<button class="btn primary" data-act="enter">${UI.cOpen.has(d.key) ? 'Go in' : 'Enter — opens its pages in the nav'} →</button>` : ''}</div></div>
+    <div class="grid2" style="grid-template-columns:2fr 1fr;align-items:start"><div>
+      <div class="tabs C-tabs" role="tablist">${ofs.map(o => `<button class="tab" role="tab" aria-selected="${o.k === cur.k}" data-act="offer" data-k="${o.k}">${o.t}</button>`).join('')}</div>
+      <div class="card">${cur.h}</div></div>
+      <div class="stack"><div class="card pink"><p class="card-label">Working on</p>${objLine(d)}</div><div class="card">${joinControl(d)}${!enter ? `<p class="note" style="margin:10px 0 0">Members see ${esc(d.name)}'s own pages in the nav. You see the front page.</p>` : ''}</div>
+      ${d.uc ? `<div class="card tint-teal sm">Behind this page, ${esc(d.name)}'s own work is <b>under construction</b>.</div>` : ''}</div></div>`;
+}
+
+// =====================================================================
+// Shell + switcher
+// =====================================================================
+function navHtml() {
+  const s = UI.seat; const hasSeat = s === 'head' || s === 'exco';
+  const a = (label, act, extra = '', active = false, cls = '') => `<a href="#" class="${active ? 'active' : ''} ${cls}" data-act="${act}" ${extra}>${label}</a>`;
+  const deptItem = d => {
+    const st = standing(d);
+    const mk = st === 'head' ? '<span class="mk-head">Head</span>' : st === 'active' ? '<span class="mk" title="Member"></span>' : st === 'inactive' ? '<span class="mk in" title="Inactive"></span>' : st === 'pending' ? '<span class="mk ask" title="You asked to join"></span>' : '';
+    const here = UI.page === 'dept' && UI.dept === d.key;
+    let sub = '';
+    if (UI.variant === 'C' && canEnter(d) && UI.cOpen.has(d.key)) {
+      const rooms = roomsFor(d).filter(r => r.ok);
+      sub = `<ul class="rooms ${UI.justEntered && here ? 'unfold' : ''}"><li style="--i:0">${a('Front page', 'go', `data-page="${d.key}"`, here && !UI.inside)}</li><li class="roomlab" style="--i:1">Inside</li>${rooms.map((r, i) => `<li style="--i:${i + 2}">${a(ROOM[r.k], 'goRoom', `data-k="${d.key}" data-room="${r.k}"`, here && UI.inside && UI.room === r.k)}</li>`).join('')}</ul>`;
+    }
+    return `<li>${a(`${esc(d.name)} ${d.uc ? '<span class="uc-dot">· building</span>' : ''}<span class="grow"></span>${mk}`, 'go', `data-page="${d.key}"`, here && !(UI.variant === 'C' && UI.cOpen.has(d.key)))}${sub}</li>`;
+  };
+  const closed = k => UI.navClosed.has(k) ? 'closed' : '';
+  return [
+    `<li>${a('Dashboard', 'go', 'data-page="dash"', UI.page === 'dash', 'dash')}</li>`,
+    `<li>${a('OKRs Hub', 'nav')}</li>`, `<li>${a('Finance Hub', 'nav')}</li>`,
+    hasSeat ? `<li>${a('Operations Hub', 'nav')}</li>` : '',
+    `<li class="grp ${closed('nc')}">${a('National Centre <span class="grow"></span><span class="chev" data-act="fold" data-k="nc">▾</span>', 'fold', 'data-k="nc"')}<ul>
+       <li>${a('Projects Hub', 'nav')}</li>
+       <li class="grp ${closed('dh')}">${a(`Departments Hub<span class="grow"></span><span class="chev" data-act="fold" data-k="dh">▾</span>`, 'go', 'data-page="dir"', UI.page === 'dir')}<ul>${DB.depts.map(deptItem).join('')}</ul></li>
+     </ul></li>`,
+    s === 'exco' ? `<li class="grp closed">${a('Branch Centre <span class="grow"></span><span class="chev">▾</span>', 'nav')}</li><li>${a('Users', 'nav')}</li>` : '',
+  ].join('');
+}
+function render() {
+  const d = D(); const seat = SEATS[UI.seat];
+  if (UI.page === 'dept' && UI.inside && !canEnter(d)) UI.inside = false;
+  if (UI.inside && !roomsFor(d).some(r => r.k === UI.room && r.ok)) UI.room = firstRoom(d);
+  document.getElementById('nav').innerHTML = navHtml();
+  const crumb = UI.page === 'dash' ? '<b>Dashboard</b>' : UI.page === 'dir' ? 'National Centre / <b>Departments</b>'
+    : `National Centre / <a href="#" data-act="go" data-page="dir">Departments</a> / ${UI.inside ? `<a href="#" data-act="out">${esc(d.name)}</a> / <b>${ROOM[UI.room]}</b>` : `<b>${esc(d.name)}</b>`}`;
+  const head = `<div class="topbar"><div class="crumb">Save7 OS / ${crumb}</div><div class="me"><div class="who"><b>${esc(nm(seat.id))}</b>${esc(seat.role)}</div>${av(seat.id, UI.seat === 'head' ? 'p' : '')}</div></div>`;
+  let body;
+  if (UI.page === 'dash') body = renderDash();
+  else if (UI.page === 'dir') body = UI.variant === 'A' ? dirA() : UI.variant === 'B' ? dirB() : dirC();
+  else body = UI.variant === 'A' ? deptA(d) : UI.variant === 'B' ? deptB(d) : deptC(d);
+  document.getElementById('main').innerHTML = head + body;
+  document.getElementById('modal').innerHTML = UI.card ? drawer() : '';
+  UI.cardAnim = false;
+  document.getElementById('fx').innerHTML = UI.justEntered && UI.variant === 'A' ? `<div class="doors" aria-hidden="true"><i></i><i></i><b>${esc(d.name)}</b></div>` : '';
+  if (UI.justEntered) { UI.justEntered = false; setTimeout(() => { document.getElementById('fx').innerHTML = ''; }, 900); }
+  renderSwitch(); setURL();
+}
+function renderSwitch() {
+  document.getElementById('pswitch').innerHTML = `<button data-act="vprev" aria-label="Previous take">←</button><span class="lbl">${UI.variant} · ${VARIANTS[UI.variant]}</span><button data-act="vnext" aria-label="Next take">→</button>
+    <span class="sep"></span><span class="k">Seat</span>${Object.entries(SEATS).map(([k, s]) => `<button class="${UI.seat === k ? 'on' : ''}" data-act="seat" data-seat="${k}">${s.short}</button>`).join('')}
+    <span class="sep"></span><button data-act="reset">Reset</button>`;
+}
+function setURL() { const u = new URL(location); u.searchParams.set('variant', UI.variant); u.searchParams.set('seat', UI.seat); u.searchParams.set('page', UI.page === 'dept' ? UI.dept : UI.page); history.replaceState(null, '', u); }
+function cycle(n) { const ks = Object.keys(VARIANTS); UI.variant = ks[(ks.indexOf(UI.variant) + n + ks.length) % ks.length]; render(); }
+function goPage(p) { UI.card = null; UI.answering = UI.declining = null; UI.writingReport = false; if (p === 'dir' || p === 'dash') UI.page = p; else { UI.page = 'dept'; if (UI.dept !== p) UI.offer = p === 'media' ? 'ask' : 'events'; UI.dept = p; UI.inside = false; } window.scrollTo(0, 0); }
+function enter(room) { const d = D(); UI.inside = true; UI.room = room || (UI.room && roomsFor(d).some(r => r.k === UI.room && r.ok) ? UI.room : firstRoom(d)); UI.justEntered = true; UI.cOpen.add(d.key); window.scrollTo(0, 0); }
+
+// =====================================================================
+// events
+// =====================================================================
+const SEAT_TOAST = {
+  vol: 'Naledi, a plain Volunteer: no Departments. Tech declined her, Education has her request, Research has no Head.',
+  member: 'Thabo, a member of Media and Education: he goes in and writes.',
+  inactive: 'Lindiwe, inactive in Media: she goes in and reads, and writes nothing.',
+  head: 'Zinhle heads two Departments — Media and Education. Membership is run from her Dashboard.',
+  exco: 'Sipho, the CEO: reads everything behind every front page and writes as backstop. Can add a Department.',
+};
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-stop]') && !e.target.closest('[data-act]')) return;
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id, d = D();
+  if (el.tagName === 'A' || el.tagName === 'SELECT' || el.type === 'checkbox') { if (el.tagName === 'A') e.preventDefault(); }
+  if (['tick', 'ms', 'inactive', 'ghosts', 'branchFilter', 'kpi'].includes(act)) return; // handled on change
+  const dk = el.dataset.k ? dept(el.dataset.k) : d;
+  switch (act) {
+    case 'nav': toast('Only the Departments are drawn in this prototype.'); return;
+    case 'fold': e.preventDefault(); e.stopPropagation(); UI.navClosed.has(el.dataset.k) ? UI.navClosed.delete(el.dataset.k) : UI.navClosed.add(el.dataset.k); break;
+    case 'go': goPage(el.dataset.page); break;
+    case 'goRoom': goPage(el.dataset.k); enter(el.dataset.room); UI.justEntered = false; break;
+    case 'vprev': return cycle(-1);
+    case 'vnext': return cycle(1);
+    case 'seat': UI.seat = el.dataset.seat; UI.card = null; UI.answering = UI.declining = null; toast(SEAT_TOAST[UI.seat]); break;
+    case 'reset': DB = seed(); Object.assign(UI, { inside: false, card: null, cOpen: new Set(), answering: null, declining: null, declineJoin: null, adding: null, writingReport: false, branchFilter: '', addingDept: false, ghosts: false, calMonth: 10 }); toast('Back to the starting data.'); break;
+    case 'enter': enter(); break;
+    case 'enterRoom': enter(el.dataset.room); break;
+    case 'out': UI.inside = false; window.scrollTo(0, 0); break;
+    case 'room': UI.room = el.dataset.room; UI.writingReport = false; break;
+    case 'offer': UI.offer = el.dataset.k; break;
+    case 'askJoin': askJoin(d); break;
+    case 'withdrawJoin': withdrawJoin(d); break;
+    case 'withdrawJoinD': withdrawJoin(dk); break;
+    case 'acceptInvite': acceptInvite(d); break;
+    case 'declineInvite': declineInvite(d); break;
+    case 'acceptInviteD': acceptInvite(dk); break;
+    case 'declineInviteD': declineInvite(dk); break;
+    case 'leave': if (standing(d) === 'head') return; leave(d); break;
+    case 'approveJoin': approveJoin(dk, el.dataset.who); break;
+    case 'declineJoin': UI.declineJoin = dk.key + ':' + el.dataset.who; break;
+    case 'cancelDJ': UI.declineJoin = null; break;
+    case 'doDeclineJoin': declineJoin(dk, el.dataset.who, document.getElementById(`dj-${dk.key}-${el.dataset.who}`).value); UI.declineJoin = null; break;
+    case 'invite': { const v = document.getElementById('inv-' + dk.key).value; if (!v) return toast('Pick someone to invite.'); invite(dk, v); break; }
+    case 'withdrawInv': withdrawInvite(dk, el.dataset.who); break;
+    case 'remove': removeMember(dk, el.dataset.who); break;
+    case 'signup': { const ev = DB.depts.flatMap(x => x.events).find(x => x.id === id); const i = ev.signed.indexOf(me()); if (i >= 0) { ev.signed.splice(i, 1); toast('Withdrawn.'); } else { if (ev.cap && ev.signed.length + ev.others >= ev.cap) return toast('Full.'); ev.signed.push(me()); toast('Signed up — it sits on your Dashboard until the day.'); } break; }
+    case 'eventPage': toast("An Event's page sits outside every hub, so anyone who reaches it can read it. Not drawn here."); return;
+    case 'okrs': toast('Opens the OKRs Hub, filtered to this Department. Not drawn here.'); return;
+    case 'dl': toast(`Would open ${el.dataset.what}. Open to every member — no sign of membership needed.`); return;
+    case 'submitReq': {
+      const tag = document.getElementById('rq-tag').value.trim(); if (!tag) return toast('Give it a tagline.');
+      const ch = [...document.querySelectorAll('input[name=rq-ch]:checked')].map(x => x.value);
+      DB.pending.push({ id: 'r' + (++DB.seq), tag, desc: document.getElementById('rq-desc').value.trim() || '—', type: document.getElementById('rq-type').value, ch: ch.length ? ch : ['Instagram'], by: me(), wanted: document.getElementById('rq-date').value || '2026-12-12', on: TODAY, branch: null });
+      toast("Sent. It waits on every Media member until one answers. Follow it from your Dashboard — you can't open Media's working pages."); break;
+    }
+    case 'accept': UI.answering = id; UI.declining = null; break;
+    case 'decline': UI.declining = id; UI.answering = null; break;
+    case 'cancelAns': UI.answering = UI.declining = null; break;
+    case 'doAccept': { const r = DB.pending.find(x => x.id === id); const sch = document.getElementById('sch-' + id).value || r.wanted; DB.pending = DB.pending.filter(x => x.id !== id); DB.cards.push({ ...r, id: 'c' + (++DB.seq), sched: sch, col: 'Not started', opted: [], acceptedBy: me(), blocked: null, tasks: [] }); UI.answering = null; toast(`Accepted for ${fmt(sch)}${days(r.wanted, sch) > 0 ? ` — ${days(r.wanted, sch)} days after the ${fmt(r.wanted)} asked for; both stay on the card` : ''}. Cleared for every member.`); break; }
+    case 'doDecline': { const why = document.getElementById('dec-' + id).value.trim(); if (!why) return toast('A decline needs a reason.'); const r = DB.pending.find(x => x.id === id); DB.pending = DB.pending.filter(x => x.id !== id); DB.declinedReq.unshift({ id: r.id, tag: r.tag, by: r.by, reason: why, on: TODAY }); UI.declining = null; toast('Declined with a reason. Cleared for every member.'); break; }
+    case 'direct': { const tag = prompt('Tagline for the new content (it enters the tracker already accepted, with no requester):'); if (!tag) return; DB.cards.push({ id: 'c' + (++DB.seq), tag, desc: 'Made directly by Media.', type: 'post', ch: ['Instagram'], by: null, wanted: null, sched: '2026-12-15', col: 'Not started', opted: canOpt() ? [me()] : [], acceptedBy: me(), branch: null, blocked: null, tasks: [] }); if (UI.inside) UI.room = 'board'; toast('Created on the tracker, scheduled 15 Dec.'); break; }
+    case 'openCard': UI.card = id; UI.adding = null; UI.cardAnim = true; break;
+    case 'closeCard': if (e.target.closest('[data-stop]') && el.classList.contains('scrim')) return; UI.card = null; break;
+    case 'move': { const c = DB.cards.find(x => x.id === id); c.col = el.dataset.col; toast(c.col === 'Published' ? 'Marked Published — by hand, after posting. It leaves the requester\'s Dashboard.' : `Moved to ${c.col}.`); break; }
+    case 'block': { const c = DB.cards.find(x => x.id === id); const n = prompt('What is it waiting on? (free text — it never names a unit)'); if (n) c.blocked = n; break; }
+    case 'unblock': DB.cards.find(x => x.id === id).blocked = null; break;
+    case 'opt': { const c = DB.cards.find(x => x.id === id); const i = c.opted.indexOf(me()); if (i >= 0) { c.opted.splice(i, 1); toast('Opted out.'); } else { c.opted.push(me()); toast('Opted in — no approval needed. Add your own Tasks.'); } break; }
+    case 'addTask': UI.adding = id; break;
+    case 'cancelTask': UI.adding = null; break;
+    case 'saveTask': { const t = document.getElementById('tk-t').value.trim(); if (!t) return toast('Name the Task.'); const due = document.getElementById('tk-due').value || null; DB.cards.find(x => x.id === id).tasks.push({ id: 't' + (++DB.seq), t, owner: me(), imp: +document.getElementById('tk-imp').value, due, done: false }); UI.adding = null; toast(due ? 'Added. Dated, so it reaches your Dashboard.' : 'Added. Undated — a note to self, not on your Dashboard.'); break; }
+    case 'calPrev': UI.calMonth = 10; break;
+    case 'calNext': UI.calMonth = 11; break;
+    case 'writeReport': UI.writingReport = true; break;
+    case 'cancelReport': UI.writingReport = false; break;
+    case 'saveReport': { const t = document.getElementById('rep-text').value.trim(); if (!t) return; d.reports.unshift({ on: TODAY, text: t }); d.lastReport = TODAY; UI.writingReport = false; toast("Sent. It waits on the General Liaison's Dashboard until opened. The directory now says reported today."); break; }
+    case 'liftUC': toast('Lifting the mark is National Exco\'s alone. Not wired here — the prototype keeps Tech, Research and Education under construction.'); return;
+    case 'addDept': UI.addingDept = true; break;
+    case 'cancelDept': UI.addingDept = false; break;
+    case 'saveDept': { const n = document.getElementById('nd-name').value.trim(); if (!n) return; DB.depts.push({ key: n.toLowerCase().replace(/\W+/g, '-'), name: n, uc: true, head: null, forText: '', objectives: [], supportKRs: 0, lastReport: null, members: {}, requests: [], invites: [], declined: {}, events: [], reports: [], tracker: { kpis: [], ms: [], dl: [] } }); UI.addingDept = false; toast(`${n} added with No Head yet. It's in everyone's nav now.`); break; }
+    default: return;
+  }
+  render();
+});
+document.addEventListener('change', e => {
+  const t = e.target, act = t.dataset.act;
+  if (act === 'tick') { const task = DB.cards.find(c => c.id === t.dataset.card).tasks.find(x => x.id === t.dataset.id); task.done = t.checked; }
+  else if (act === 'ms') D().tracker.ms[+t.dataset.i].done = t.checked;
+  else if (act === 'kpi') { D().tracker.kpis[+t.dataset.i].cur = +t.value; }
+  else if (act === 'inactive') setInactive(dept(t.dataset.k), t.dataset.who, t.checked);
+  else if (act === 'ghosts') UI.ghosts = t.checked;
+  else if (act === 'branchFilter') UI.branchFilter = t.value;
+  else return;
+  render();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (e.key === 'Enter' && e.target.matches('[data-act=openCard],[data-act=out]')) { e.target.click(); return; }
+  if (e.key === 'Escape' && UI.card) { UI.card = null; render(); return; }
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+});
+// remove-member and leave are deliberate acts; nothing is undone silently
+render();
+</script>
+</body>
+</html>
