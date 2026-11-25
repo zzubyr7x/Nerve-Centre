@@ -639,7 +639,7 @@ function seed() {
         pico: null, method: 'Semi-structured interviews, 12–15 students across three campuses.',
         ethics: { st: 'pending', ref: '', letter: null }, project: null, blocked: '',
         log: [{ on: '2026-10-09', by: 'thabo', text: 'Drafted the interview guide. Need a second campus.' }],
-        docs: [{ id: 'd6', name: 'Interview guide draft.docx', by: 'thabo', on: '2026-10-09' }], jreq: [], jinv: [] },
+        docs: [{ id: 'd6', name: 'Interview guide draft.docx', by: 'thabo', on: '2026-10-09' }], jreq: [{ who: 'aisha', on: '2026-11-20' }], jinv: [] },
       { id: 's5', title: 'Where students can get PrEP: a campus map', kind: 'survey', col: 'k6', lead: 'kea', team: ['kea', 'pieter'],
         question: 'Where on or near each campus can a student get PrEP, and on what days?',
         pico: null, method: 'Phoned and visited every clinic within 3 km of eight campuses.',
@@ -688,7 +688,7 @@ const canOpen = () => isMember();                                           // a
 const onTeam = s => s.team.includes(me());
 const canWrite = s => onTeam(s) || isBack();                               // the team writes; Head + Exco as backstop
 const leadGone = s => !DB.members[s.lead];
-const canGate = s => s.lead === me() && !leadGone(s);                       // the lead is the only gate onto the team
+const canGate = s => (s.lead === me() && !leadGone(s)) || isHead();         // the lead, or the Head of Research, answers a request to take part
 const canDelDoc = (s, d) => d.by === me() || isBack();
 const isEnd = s => DB.cols.findIndex(c => c.id === s.col) >= DB.cols.length - 2;
 function standing() {
@@ -753,7 +753,7 @@ function secTeam(s) {
   const outsiders = Object.keys(DB.members).filter(p => !s.team.includes(p) && !s.jinv.some(r => r.who === p) && !s.jreq.some(r => r.who === p));
   let ctl = '';
   if (canGate(s)) {
-    ctl = `${s.jreq.map(r => `<div class="li pink row"><span class="sm grow"><b class="strong">${esc(nm(r.who))}</b> asks to join · ${fmt(r.on)}</span><button class="btn ok sm" data-act="jyes" data-id="${s.id}" data-who="${r.who}">Approve</button><button class="btn sm" data-act="jno" data-id="${s.id}" data-who="${r.who}">Decline</button></div>`).join('')}
+    ctl = `${s.jreq.map(r => `<div class="li pink row"><span class="sm grow"><b class="strong">${esc(nm(r.who))}</b> asks to take part · ${fmt(r.on)}${s.lead === me() ? '' : ' <span class="note">— answering as Head</span>'}</span><button class="btn ok sm" data-act="jyes" data-id="${s.id}" data-who="${r.who}">Approve</button><button class="btn sm" data-act="jno" data-id="${s.id}" data-who="${r.who}">Decline</button></div>`).join('')}
       ${s.jinv.map(r => `<div class="li row"><span class="sm grow">Invited <b class="strong">${esc(nm(r.who))}</b> · waits on them</span><button class="link" data-act="jwd" data-id="${s.id}" data-who="${r.who}">Withdraw</button></div>`).join('')}
       ${outsiders.length ? `<div class="row"><select id="inv-${s.id}"><option value="">Invite someone from Research…</option>${outsiders.map(p => `<option value="${p}">${esc(nm(p))}</option>`).join('')}</select><button class="btn sm" data-act="jinv" data-id="${s.id}">Invite</button></div>` : ''}`;
   } else if (inv) {
@@ -762,14 +762,14 @@ function secTeam(s) {
     ctl = `<button class="link" data-act="jleave" data-id="${s.id}">Leave this team</button>`;
   } else if (isMember() && !onTeam(s)) {
     ctl = mine ? `<div class="row"><span class="chip amber">Request pending</span><button class="link" data-act="jwdme" data-id="${s.id}">Withdraw</button></div>`
-      : leadGone(s) ? '<span class="note">No lead to ask until the Head names one.</span>' : `<button class="btn sm" data-act="jask" data-id="${s.id}">Ask to join the team</button>`;
+      : `<button class="btn sm" data-act="jask" data-id="${s.id}">Ask to take part</button><span class="note">${leadGone(s) ? 'The Head answers — the lead has left.' : `${esc(nm(s.lead))} or the Head answers.`}</span>`;
   }
   const newLead = isBack() && s.team.filter(p => DB.members[p] && p !== s.lead).length
     ? `<div class="row" style="margin-top:8px"><select id="nl-${s.id}"><option value="">${leadGone(s) ? 'Name a new lead…' : 'Change the lead…'}</option>${s.team.filter(p => DB.members[p] && p !== s.lead).map(p => `<option value="${p}">${esc(nm(p))}</option>`).join('')}</select><button class="btn sm" data-act="newLead" data-id="${s.id}">Name</button></div>`
     : isBack() && leadGone(s) ? '<p class="note">Nobody left on the team to lead it. Add someone first, or let it stand.</p>' : '';
   return `<div class="sec"><h4>Team</h4><div class="team">${s.team.map(p => `<div class="tm">${av(p, p === s.lead ? 'p' : '')}<b>${esc(nm(p))}</b>${p === s.lead ? '<span class="lead-tag">Lead</span>' : ''}${!DB.members[p] ? '<span class="gone-tag">left Research</span>' : ''}</div>`).join('')}</div>
     ${leadGone(s) ? `<p class="note" style="margin:8px 0 0">The lead left Research. The Study stands and the team still writes it; the Head names a new lead. Nothing goes red.</p>` : ''}
-    <div class="stack" style="gap:6px;margin-top:10px">${ctl}</div>${newLead}</div>`;
+    <div class="stack" style="gap:6px;margin-top:10px">${ctl}</div>${newLead}<p class="note" style="margin:8px 0 0">Any Research member may ask to take part. The person who started the Study (its lead) or the Head of Research accepts or declines.</p></div>`;
 }
 function secDetails(s) {
   return `<div class="sec"><h4>Details</h4><dl class="fields">
@@ -1026,9 +1026,9 @@ document.addEventListener('click', e => {
     case 'block': { const n = prompt('What is it waiting on? (free text — it names no unit)'); if (!n) return; s.blocked = n; toast('Flagged. It stays in its column.'); break; }
     case 'unblock': s.blocked = ''; break;
     case 'moveTo': s.col = el.dataset.col; toast(`Moved to ${col(s.col).name}.${s.ethics.st === 'pending' && ['k3', 'k4'].includes(s.col) ? ' Ethics is still pending — recorded, not enforced.' : ''}`); break;
-    case 'jask': s.jreq.push({ who: me(), on: TODAY }); toast(`Asked. It waits on ${nm(s.lead)}, here on the Study.`); break;
+    case 'jask': s.jreq.push({ who: me(), on: TODAY }); toast(`Asked to take part. ${leadGone(s) ? 'The Head' : `${nm(s.lead)} (who started it) or the Head`} answers, here on the Study.`); break;
     case 'jwdme': s.jreq = s.jreq.filter(r => r.who !== me()); toast('Withdrawn.'); break;
-    case 'jyes': s.jreq = s.jreq.filter(r => r.who !== who); s.team.push(who); toast(`${nm(who)} is on the team and writes the Study now.`); break;
+    case 'jyes': s.jreq = s.jreq.filter(r => r.who !== who); s.team.push(who); toast(`${nm(who)} is on the team and writes the Study now${s.lead === me() ? '' : ' — accepted by the Head'}.`); break;
     case 'jno': { const r = prompt('A reason? (optional — they\'ll see it)', ''); if (r === null) return; s.jreq = s.jreq.filter(x => x.who !== who); toast(`Declined ${nm(who)}.`); break; }
     case 'jinv': { const p = val('inv-' + s.id); if (!p) return; s.jinv.push({ who: p, on: TODAY }); toast(`Invited ${nm(p)}. They accept or decline on the Study.`); break; }
     case 'jwd': s.jinv = s.jinv.filter(r => r.who !== who); break;
