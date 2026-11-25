@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE — the Research board and a Study</title>
+<!--
+  PROTOTYPE, throwaway. Ticket: "Prototype: the Research board and a Study"
+  (zzubyr7x/Nerve-Centre#76). Question: what do the Research board and a Study look like, a
+  Study's page (question, methodology, ethics, log, documents, team), and opening a Study?
+
+  Host: Research's hub as #60 settled it (take A, the Doorway) — the front page, the door, and
+  "Inside Research" with its own chrome. Only what is behind the door varies.
+
+  Three takes, switchable with ?variant=A|B|C (or the arrows / ← → keys), crossed with a seat
+  switcher (?seat=vol|lead|member|head|exco):
+    A  Board & drawer     — the Board is the page; a Study opens in a drawer over it; opening one is a short modal
+    B  Register & page    — Studies listed by stage; a Study is a full page of its own; opening one is a full form
+    C  Pipeline & dossier — the stages are a strip of filters over a list; the Study sits beside it as a tabbed dossier
+  ?inside=1 starts behind the door. Everything lives in memory, shared across seats, so an act in
+  one seat shows in another. Reload resets it. Open questions are amber.
+-->
+<style>
+/* ==========================================================================
+   SAVE7 LOOK — the visual vocabulary every prototype on the Nerve Centre map
+   shares. Taken from the KEPSA presentation ("KEPSA Slides - SANS"), which the
+   user gave on 2026-10-07 as the design direction for the OS and all prototypes.
+
+   Colours were sampled from the rendered PDF, not guessed. Typeface is
+   Montserrat (embedded in the deck: Regular, Medium, SemiBold, Bold, italics).
+
+   Use it: paste this file into a prototype's <style> block and put
+   class="save7-look" on <body>. A prototype is inlined rather than linked so it
+   opens by double-click and survives being emailed; this file is the one source
+   the copies are taken from.
+
+   TWO EXTENSIONS beyond what the deck shows, both for small text:
+   --teal-ink and --pink-ink are darker twins of the brand teal and pink. The
+   brand values are fine for titles, fills and shapes (as the deck uses them) but
+   fall below readable contrast as small body text on white.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+:root {
+  /* brand */
+  --navy: #0C173B;
+  --teal: #00B7B5;
+  --pink: #ED186B;
+  --amber: #FFC550;          /* connectors, pins, third-in-sequence — never a main colour */
+  --ink: #585858;            /* body text */
+
+  /* tints (card borders, fills, blobs) */
+  --teal-border: #E6F7F7;
+  --teal-fill: #F4FBFB;
+  --mint: #F3FBFB;
+  --pink-border: #FCE8F0;
+  --pink-fill: #FFF5F7;
+  --pink-head: #FCDCE8;
+  --amber-fill: #FFF6DD;     /* derived from the amber, for flag callouts */
+
+  /* small-text twins (extension — see header) */
+  --teal-ink: #007F7D;
+  --pink-ink: #C70F58;
+  --amber-ink: #8A5B00;
+
+  --radius: 20px;
+  --radius-sm: 12px;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+.save7-look {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: #fff;
+}
+
+/* ---- the two backdrop blobs: pale mint top-right, pale pink bottom-left ---- */
+.save7-look::before,
+.save7-look::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.save7-look::before { top: -22vw; right: -16vw; width: 52vw; height: 52vw; background: var(--mint); }
+.save7-look::after  { bottom: -20vw; left: -12vw; width: 38vw; height: 38vw; background: var(--pink-fill); }
+
+/* ---- the two-circle motif: big teal, smaller pink, overlapping ---- */
+.circles { position: relative; width: 104px; height: 96px; flex: none; }
+.circles::before,
+.circles::after { content: ''; position: absolute; border-radius: 50%; }
+.circles::before { top: 0; right: 0; width: 72px; height: 72px; background: var(--teal); }
+.circles::after  { bottom: 0; left: 6px; width: 44px; height: 44px; background: var(--pink); }
+
+/* ---- type ---- */
+.eyebrow { margin: 0 0 4px; font-weight: 600; font-size: 13px; color: var(--pink-ink); }
+.eyebrow.teal { color: var(--teal-ink); }
+.title { margin: 0; font-weight: 700; color: var(--navy); line-height: 1.15; letter-spacing: -0.01em; }
+.title .dot { color: var(--pink); }
+.title .accent { color: var(--teal); }
+h1.title { font-size: 40px; }
+h2.title { font-size: 26px; }
+h3.title { font-size: 18px; }
+.lede { color: var(--ink); font-size: 15px; max-width: 70ch; }
+.strong { font-weight: 700; color: var(--navy); }
+.muted { color: #8a8a8a; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ---- cards: white, large radius, hairline tinted border; alternate teal/pink ---- */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+.card.pink { border-color: var(--pink-border); }
+.card.tint-teal { background: var(--teal-fill); }
+.card.tint-pink { background: var(--pink-fill); }
+.card-label { margin: 0 0 10px; font-weight: 700; font-size: 15px; color: var(--navy); }
+
+/* ---- number pills ("01", "BARRIER 01") ---- */
+.num {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.num.pink { background: var(--pink); }
+.num.amber { background: var(--amber); color: var(--navy); }
+
+/* ---- buttons: outlined teal pill; pink for the primary ---- */
+.btn {
+  font: 600 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--teal-fill); }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; font-weight: 700; }
+.btn.primary:hover { background: #d4125d; }
+.btn.quiet { border-color: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--teal-fill); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, .tab:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* ---- status chips: small, pale ---- */
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-border);
+  color: var(--teal-ink);
+  white-space: nowrap;
+}
+.chip.pink { background: var(--pink-border); color: var(--pink-ink); }
+.chip.amber { background: #FFEFC2; color: var(--amber-ink); }
+.chip.grey { background: #F1F1F3; color: #666; }
+
+/* ---- tabs: pill row, active in pink ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab {
+  font: 600 13px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--teal-fill); }
+.tab[aria-selected="true"] { background: var(--pink-fill); border-color: var(--pink); color: var(--pink-ink); }
+
+/* ---- form controls ---- */
+input[type="text"], select {
+  font: 500 13px var(--font);
+  color: var(--navy);
+  background: #fff;
+  border: 1.5px solid var(--teal-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+input[type="text"]::placeholder { color: #a5a5a5; }
+
+/* ---- labelled field rows ---- */
+.fields { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; }
+.fields dt { font-weight: 600; font-size: 12px; color: #8a8a8a; align-self: center; }
+.fields dd { margin: 0; color: var(--navy); font-weight: 600; }
+
+/* ---- timeline bar: alternating teal and pink segments, amber pin on the current one ---- */
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.bar > i { flex: 1; background: var(--teal); }
+.bar > i:nth-child(even) { background: var(--pink); }
+.bar > i.todo { opacity: 0.22; }
+
+/* ---- callout: amber, for open questions the user should react to ---- */
+.flag {
+  background: var(--amber-fill);
+  border: 1.5px solid #FFE7A8;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #5a4300;
+}
+.flag b { color: var(--amber-ink); }
+
+/* ---- logo ---- */
+.logo { display: block; height: 22px; width: auto; }
+
+
+/* ===================== prototype-only layout ===================== */
+html, body { height: 100%; }
+body.save7-look { background: #fff; }
+.proto-banner { position: sticky; top: 0; z-index: 30; background: var(--amber-fill); border-bottom: 1.5px solid #FFE7A8; color: #5a4300; font-size: 12px; padding: 6px 16px; text-align: center; }
+.proto-banner b { color: var(--amber-ink); }
+
+/* ---- the Shell: KEPSA-portal white sidebar, pink-tinted active item ---- */
+.shell { display: grid; grid-template-columns: 250px 1fr; min-height: calc(100vh - 31px); }
+.side { background: #fff; border-right: 1.5px solid var(--teal-border); padding: 18px 12px 120px; position: sticky; top: 31px; height: calc(100vh - 31px); overflow-y: auto; }
+.side .logo { height: 24px; margin: 4px 10px 18px; }
+.nav { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.nav li a { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 500; }
+.nav li a:hover { background: var(--teal-fill); }
+.nav li a.active { background: var(--pink-fill); color: var(--pink-ink); font-weight: 700; }
+.nav li a.dash { font-weight: 700; color: var(--navy); }
+.nav .grp > a { font-weight: 700; color: var(--navy); }
+.nav .chev { margin-left: auto; width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 6px; color: #9a9a9a; font-size: 11px; transition: transform .18s; }
+.nav .chev:hover { background: var(--teal-border); color: var(--navy); }
+.nav .closed > a .chev { transform: rotate(-90deg); }
+.nav ul { list-style: none; margin: 0; padding: 0 0 0 12px; }
+.nav .closed > ul { display: none; }
+.nav .roomlab { margin: 6px 10px 2px 22px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #a5a5a5; }
+.nav .rooms a { font-size: 12.5px; padding: 5px 10px 5px 22px; }
+.nav .unfold > li { animation: drop .28s both; animation-delay: calc(var(--i) * 45ms); }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.mk { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex: none; }
+.mk.in { background: #c9c9c9; }
+.mk.ask { background: var(--amber); }
+.mk-head { font-size: 9.5px; font-weight: 700; color: var(--pink-ink); background: var(--pink-border); padding: 1px 6px; border-radius: 999px; }
+.uc-dot { font-size: 9.5px; color: #9a9a9a; font-weight: 600; }
+
+.main { padding: 22px 28px 140px; min-width: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.crumb { font-size: 12px; color: #8a8a8a; }
+.crumb b { color: var(--navy); }
+.crumb a { color: #8a8a8a; text-decoration: none; }
+.crumb a:hover { color: var(--navy); text-decoration: underline; }
+.me { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.me .who { text-align: right; line-height: 1.25; }
+.me .who b { color: var(--navy); display: block; }
+
+/* ---- shared bits ---- */
+.av { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 700; font-size: 11px; color: #fff; background: var(--teal); flex: none; }
+.av.p { background: var(--pink); }
+.av.sm { width: 22px; height: 22px; font-size: 9px; }
+.av.gone { background: #d0d0d0; }
+.avs { display: inline-flex; }
+.avs .av { border: 2px solid #fff; margin-left: -6px; }
+.avs .av:first-child { margin-left: 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+.sm { font-size: 12px; }
+.xs { font-size: 11px; }
+.note { font-size: 12px; color: #8a8a8a; }
+.btn.sm { padding: 5px 12px; font-size: 12px; }
+.btn.ok { border-color: var(--teal); background: var(--teal); color: #fff; }
+.btn.ok:hover { background: #00a3a1; }
+.btn.red { border-color: #F3C3BE; color: #B42318; }
+.chip.red { background: #FEE4E2; color: #B42318; }
+.chip.navy { background: var(--navy); color: #fff; }
+.stack { display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hr { height: 1.5px; background: var(--teal-border); margin: 14px 0; border: 0; }
+textarea, input[type="date"], input[type="number"] { font: 500 13px var(--font); color: var(--navy); background: #fff; border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 8px 12px; }
+textarea { width: 100%; min-height: 70px; resize: vertical; }
+input[type="number"] { width: 80px; }
+label.f { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: #8a8a8a; }
+label.f input[type=text], label.f select, label.f input[type=date] { width: 100%; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12.5px; color: var(--navy); }
+.checks label { display: inline-flex; gap: 5px; align-items: center; }
+.empty { border: 1.5px dashed var(--teal-border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: #8a8a8a; font-size: 12.5px; }
+.flag { margin: 10px 0; }
+.list { display: grid; gap: 8px; }
+.li { border: 1.5px solid var(--teal-border); border-radius: var(--radius-sm); padding: 10px 14px; background: #fff; }
+.li.pink { border-color: var(--pink-border); }
+.li.red { border-color: #F3C3BE; background: #FFFBFA; }
+.kv { font-size: 12px; color: #8a8a8a; }
+.kv b { color: var(--navy); font-weight: 600; }
+.objs { display: flex; flex-wrap: wrap; gap: 6px; }
+.obj { font-size: 12px; font-weight: 600; color: var(--navy); background: var(--teal-fill); border: 1.5px solid var(--teal-border); border-radius: 999px; padding: 3px 11px; }
+.link { color: var(--teal-ink); font-weight: 600; text-decoration: none; cursor: pointer; background: none; border: 0; padding: 0; font: 600 12px var(--font); }
+.link:hover { text-decoration: underline; }
+.standing { display: inline-flex; align-items: center; gap: 6px; }
+.join { display: grid; gap: 8px; }
+.join .why { font-size: 12px; color: #8a8a8a; }
+.lock { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; }
+
+/* ---- offerings ---- */
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 54px; text-align: center; font-size: 10px; color: #8a8a8a; }
+.sw i { display: block; height: 38px; border-radius: 10px; margin-bottom: 3px; }
+.lib { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.lib div { aspect-ratio: 1; border-radius: 12px; position: relative; overflow: hidden; }
+.lib div span { position: absolute; left: 6px; bottom: 5px; font-size: 9.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.cov { display: grid; grid-template-columns: 64px 1fr auto; gap: 4px 12px; font-size: 12.5px; align-items: baseline; }
+.cov .d { color: #8a8a8a; font-size: 11.5px; }
+.cov .w { color: var(--navy); font-weight: 600; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; font-size: 11.5px; }
+.steps span { background: var(--teal-fill); border-radius: 999px; padding: 3px 10px; color: var(--teal-ink); font-weight: 600; }
+.steps span:nth-child(even) { background: var(--pink-fill); color: var(--pink-ink); }
+
+/* ---- the Board ---- */
+.board { display: grid; grid-template-columns: repeat(4, minmax(190px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.col { background: var(--teal-fill); border-radius: 16px; padding: 10px; min-height: 160px; }
+.col:nth-child(even) { background: var(--pink-fill); }
+.col h4 { margin: 2px 4px 10px; font-size: 12px; color: var(--navy); display: flex; justify-content: space-between; }
+.col h4 span { color: #8a8a8a; font-weight: 600; }
+.kcard { background: #fff; border: 1.5px solid var(--teal-border); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; display: grid; gap: 6px; transition: box-shadow .12s, transform .12s; }
+.kcard:hover { box-shadow: 0 4px 14px rgba(12,23,59,.08); transform: translateY(-1px); }
+.kcard.over { border-color: #F3C3BE; box-shadow: inset 3px 0 0 #D92D20; }
+.kcard .t { font-weight: 700; color: var(--navy); font-size: 13px; line-height: 1.3; }
+.dates { font-size: 11px; color: #8a8a8a; }
+.dates b { color: var(--navy); }
+.dates .slip { color: var(--pink-ink); font-weight: 700; }
+.dates s { color: #b0b0b0; }
+.blocked { font-size: 11px; background: #F1F1F3; color: #555; border-radius: 8px; padding: 3px 8px; }
+.red { color: #D92D20; }
+
+/* ---- calendar ---- */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal .h { font-size: 10.5px; font-weight: 700; color: #9a9a9a; text-align: center; padding: 4px 0; }
+.cal .d { min-height: 82px; border: 1.5px solid var(--teal-border); border-radius: 10px; padding: 4px 5px; font-size: 11px; background: #fff; display: grid; align-content: start; gap: 3px; }
+.cal .d.out { background: #fafafa; border-color: #f2f2f2; color: #c2c2c2; }
+.cal .d.today { border-color: var(--pink); }
+.cal .n { font-weight: 700; color: #9a9a9a; font-size: 10.5px; }
+.cal .today .n { color: var(--pink-ink); }
+.ev { border-radius: 7px; padding: 2px 5px; background: var(--teal-border); color: var(--teal-ink); font-weight: 600; font-size: 10.5px; line-height: 1.25; cursor: pointer; }
+.ev.pub { background: #F1F1F3; color: #777; text-decoration: line-through; }
+.ev.over { background: #FEE4E2; color: #B42318; }
+.ev.ghost { background: transparent; border: 1.5px dashed var(--amber); color: var(--amber-ink); cursor: default; }
+.ev small { display: block; font-weight: 500; opacity: .8; }
+
+/* ---- tracker ---- */
+.kpi { display: grid; grid-template-columns: 1fr 200px 110px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1.5px solid var(--teal-border); font-size: 13px; }
+.kpi:last-child { border-bottom: 0; }
+.meter { height: 8px; background: var(--teal-border); border-radius: 4px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--teal); }
+.kpi:nth-child(even) .meter i { background: var(--pink); }
+
+/* ---- drawer & modal ---- */
+.scrim { position: fixed; inset: 0; background: rgba(12,23,59,.28); z-index: 60; display: flex; justify-content: flex-end; }
+.drawer { width: min(520px, 100%); height: 100%; background: #fff; overflow-y: auto; padding: 22px 24px 120px; box-shadow: -12px 0 40px rgba(12,23,59,.15); }
+.drawer.anim { animation: slidein .22s ease-out; }
+@keyframes slidein { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.task { display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f2f2f2; }
+.task.done .tt { text-decoration: line-through; color: #aaa; }
+.imp { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--pink-ink); }
+.imp.lo { color: #bbb; }
+
+/* ---- toast ---- */
+.toast { position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%) translateY(10px); background: var(--navy); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 12.5px; max-width: 560px; opacity: 0; pointer-events: none; transition: .2s; z-index: 80; }
+.toast.on { opacity: 1; transform: translateX(-50%); }
+
+/* ===================== take A: Doorway ===================== */
+.A-hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: stretch; margin-bottom: 18px; }
+.A-front { position: relative; padding: 26px 28px; border-radius: 28px; background: linear-gradient(135deg, var(--mint), #fff 65%); border: 1.5px solid var(--teal-border); overflow: hidden; }
+.A-front .circles { position: absolute; right: 18px; top: 16px; opacity: .9; }
+.A-front h1 { font-size: 46px; }
+.A-door { border-radius: 28px; padding: 24px; display: grid; gap: 12px; align-content: space-between; background: var(--navy); color: #cfd3e3; position: relative; overflow: hidden; }
+.A-door::after { content: ''; position: absolute; right: -40px; bottom: -40px; width: 160px; height: 160px; border-radius: 50%; background: var(--pink); opacity: .25; }
+.A-door h3 { color: #fff; margin: 0; font-size: 20px; }
+.A-door .rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+.A-door .rooms span { font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.08); color: #fff; }
+.A-door .rooms span.x { opacity: .4; }
+.A-door.shut { background: #fff; color: var(--ink); border: 1.5px dashed var(--pink-border); }
+.A-door.shut h3 { color: var(--navy); }
+.A-door.shut::after { display: none; }
+.A-enter { font: 700 15px var(--font); background: var(--pink); color: #fff; border: 0; border-radius: 999px; padding: 13px 22px; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; justify-self: start; position: relative; z-index: 1; }
+.A-enter:hover { background: #d4125d; }
+.A-enter .arr { transition: transform .15s; }
+.A-enter:hover .arr { transform: translateX(4px); }
+.A-offers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.A-offers .card:nth-child(4n+2), .A-offers .card:nth-child(4n+3) { border-color: var(--pink-border); }
+.A-offers .wide { grid-column: 1 / -1; }
+.A-inside { margin: -22px -28px 0; }
+.A-ihead { background: var(--navy); color: #cfd3e3; padding: 18px 28px 0; position: relative; overflow: hidden; }
+.A-ihead::before { content: ''; position: absolute; right: 60px; top: -50px; width: 140px; height: 140px; border-radius: 50%; background: var(--teal); opacity: .25; }
+.A-ihead::after { content: ''; position: absolute; right: 20px; top: 30px; width: 70px; height: 70px; border-radius: 50%; background: var(--pink); opacity: .35; }
+.A-ihead h2 { color: #fff; margin: 4px 0 2px; font-size: 26px; }
+.A-ihead .back { color: #cfd3e3; font: 600 12px var(--font); background: none; border: 0; cursor: pointer; padding: 0; }
+.A-ihead .back:hover { color: #fff; }
+.A-rooms { display: flex; gap: 2px; margin-top: 16px; flex-wrap: wrap; position: relative; z-index: 1; }
+.A-rooms button { font: 600 13px var(--font); color: #cfd3e3; background: transparent; border: 0; border-radius: 12px 12px 0 0; padding: 10px 16px; cursor: pointer; }
+.A-rooms button:hover { color: #fff; background: rgba(255,255,255,.06); }
+.A-rooms button[aria-selected=true] { background: #fff; color: var(--navy); }
+.A-ibody { padding: 22px 28px; }
+.doors { position: fixed; inset: 0; z-index: 90; pointer-events: none; display: grid; grid-template-columns: 1fr 1fr; }
+.doors i { display: block; background: var(--teal); animation: dl .62s cubic-bezier(.7,0,.3,1) .12s both; }
+.doors i + i { background: var(--pink); animation-name: dr; }
+.doors b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 34px; font-weight: 700; animation: fade .5s .1s both; }
+@keyframes dl { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes dr { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes fade { from { opacity: 1; } to { opacity: 0; } }
+.A-dir { display: grid; gap: 12px; }
+.A-drow { display: grid; grid-template-columns: 200px 1fr 210px; gap: 18px; align-items: center; padding: 18px 22px; border-radius: 22px; border: 1.5px solid var(--teal-border); background: #fff; cursor: pointer; transition: box-shadow .12s; }
+.A-drow:nth-child(even) { border-color: var(--pink-border); }
+.A-drow:hover { box-shadow: 0 6px 22px rgba(12,23,59,.07); }
+.A-drow h2 { margin: 0; font-size: 28px; }
+
+/* ===================== the prototype switcher ===================== */
+.pswitch { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 5px; background: #111; color: #fff; border-radius: 999px; padding: 6px 8px; box-shadow: 0 10px 30px rgba(0,0,0,.35); font: 600 12px system-ui, -apple-system, sans-serif; max-width: calc(100vw - 16px); overflow-x: auto; white-space: nowrap; }
+.pswitch button { font: inherit; color: #fff; background: #2a2a2a; border: 0; border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+.pswitch button:hover { background: #3a3a3a; }
+.pswitch button.on { background: #FFC550; color: #111; }
+.pswitch .lbl { padding: 0 8px; min-width: 120px; text-align: center; }
+.pswitch .sep { width: 1px; height: 20px; background: #444; margin: 0 3px; flex: none; }
+.pswitch .k { color: #999; font-weight: 500; padding-left: 4px; }
+
+@media (max-width: 1100px) {
+  .A-hero, .B, .grid2 { grid-template-columns: 1fr; }
+  .A-drow { grid-template-columns: 1fr; }
+  .B-panel { position: static; }
+  .B-work { grid-template-columns: 1fr; }
+  .B-rooms { position: static; display: flex; flex-wrap: wrap; }
+  .kpi { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; padding: 10px 16px; border-right: 0; border-bottom: 1.5px solid var(--teal-border); }
+  .main { padding: 16px 16px 140px; }
+  .A-inside { margin: -16px -16px 0; }
+  .A-offers, .B-dir, .B-tiles { grid-template-columns: 1fr; }
+  .B-in { grid-template-columns: 1fr; }
+  .B-rail { min-height: 0; writing-mode: horizontal-tb; }
+  .B-rail .v { writing-mode: horizontal-tb; transform: none; }
+  .lib { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .doors { display: none; }
+}
+
+/* ===================== #76: shared Study bits ===================== */
+.chip.grey { background: #F1F1F3; color: #666; }
+.eth { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; display: inline-flex; gap: 4px; align-items: center; }
+.eth.none { background: #F1F1F3; color: #777; }
+.eth.pending { background: var(--amber-fill); color: var(--amber-ink); }
+.eth.approved { background: var(--teal-border); color: var(--teal-ink); }
+.kind { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #9a9a9a; }
+.sec { margin-bottom: 18px; }
+.sec > h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #9a9a9a; display: flex; align-items: center; gap: 8px; }
+.sec > h4 .grow { flex: 1; }
+.q { font-size: 15px; font-weight: 600; color: var(--navy); line-height: 1.45; margin: 0; }
+.pico { display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; font-size: 12.5px; margin-top: 10px; }
+.pico b { color: var(--pink-ink); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.prose { font-size: 13px; line-height: 1.55; color: var(--ink); margin: 0; white-space: pre-wrap; }
+.log { display: grid; gap: 0; border-left: 2px solid var(--teal-border); margin-left: 6px; }
+.log .e { position: relative; padding: 2px 0 12px 16px; font-size: 13px; }
+.log .e::before { content: ''; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid var(--teal); }
+.log .e:nth-child(even)::before { border-color: var(--pink); }
+.log .e .m { font-size: 11px; color: #8a8a8a; margin-bottom: 2px; }
+.docs { display: grid; gap: 6px; }
+.doc { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; font-size: 12.5px; border: 1.5px solid var(--teal-border); border-radius: 12px; padding: 7px 10px; }
+.doc .ic { width: 26px; height: 30px; border-radius: 5px; background: var(--teal-fill); color: var(--teal-ink); font-size: 8.5px; font-weight: 700; display: grid; place-items: center; }
+.doc.pd .ic { background: var(--amber-fill); color: var(--amber-ink); }
+.doc b { color: var(--navy); font-weight: 600; display: block; }
+.team { display: grid; gap: 6px; }
+.tm { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.tm b { color: var(--navy); font-weight: 600; }
+.lead-tag { font-size: 9.5px; font-weight: 700; color: var(--pink-ink); background: var(--pink-border); padding: 1px 7px; border-radius: 999px; }
+.gone-tag { font-size: 9.5px; font-weight: 700; color: #777; background: #F1F1F3; padding: 1px 7px; border-radius: 999px; }
+.blk { font-size: 11.5px; background: #F1F1F3; color: #555; border-radius: 8px; padding: 4px 9px; }
+.ed input[type=text], .ed select, .ed textarea { width: 100%; }
+.ed { display: grid; gap: 10px; }
+.backstop { font-size: 11px; color: #8a8a8a; font-style: italic; }
+.modalc { position: fixed; inset: 0; background: rgba(12,23,59,.28); z-index: 60; display: grid; place-items: center; padding: 16px; }
+.modalc .box { width: min(520px, 100%); background: #fff; border-radius: 22px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(12,23,59,.2); max-height: calc(100vh - 32px); overflow-y: auto; }
+.seatnote { font-size: 12px; color: #8a8a8a; margin: -6px 0 14px; }
+.colsed .r { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.ibtn { font: 600 12px var(--font); border: 1.5px solid var(--teal-border); background: #fff; color: var(--navy); border-radius: 8px; padding: 4px 8px; cursor: pointer; }
+.ibtn:hover { background: var(--teal-fill); }
+.ibtn:disabled { opacity: .35; cursor: default; }
+
+/* ===================== take A: Board & drawer ===================== */
+.RA-head { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.RA-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(215px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.RA-board .col.end { background: #F6F6F8; }
+.RA-card .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.RA-card .last { font-size: 11.5px; color: #8a8a8a; line-height: 1.35; }
+.RA-card.mine { border-color: var(--pink-border); }
+
+/* ===================== take B: Register & page ===================== */
+.RB-strip { display: flex; gap: 0; margin-bottom: 18px; border-radius: 14px; overflow: hidden; border: 1.5px solid var(--teal-border); }
+.RB-strip div { flex: 1; padding: 10px 12px; font-size: 11.5px; color: #8a8a8a; border-right: 1.5px solid var(--teal-border); background: #fff; }
+.RB-strip div:last-child { border-right: 0; }
+.RB-strip b { display: block; font-size: 20px; color: var(--navy); }
+.RB-grp { margin-bottom: 18px; }
+.RB-grp h3 { font-size: 13px; margin: 0 0 6px; color: var(--navy); display: flex; gap: 8px; align-items: center; }
+.RB-grp h3 span { color: #9a9a9a; font-weight: 600; }
+.RB-t { width: 100%; border-collapse: collapse; font-size: 12.5px;  table-layout: fixed; }
+.RB-t th:nth-child(2) { width: 130px; } .RB-t th:nth-child(3) { width: 140px; } .RB-t th:nth-child(4) { width: 130px; } .RB-t th:nth-child(5) { width: 100px; }
+.RB-t td, .RB-t th { padding: 9px 10px; border-bottom: 1.5px solid var(--teal-border); text-align: left; vertical-align: middle; }
+.RB-t th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #9a9a9a; font-weight: 700; }
+.RB-t tr.r { cursor: pointer; }
+.RB-t tr.r:hover td { background: var(--teal-fill); }
+.RB-t .t { font-weight: 700; color: var(--navy); }
+.RB-page .band { position: relative; border-radius: 24px; padding: 20px 24px; background: linear-gradient(135deg, var(--mint), #fff 70%); border: 1.5px solid var(--teal-border); margin-bottom: 18px; overflow: hidden; }
+.RB-page .band h1 { font-size: 30px; margin: 4px 0 8px; }
+.RB-steps { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 12px; }
+.RB-steps button { font: 600 11.5px var(--font); border: 1.5px solid var(--teal-border); background: #fff; color: #8a8a8a; border-radius: 999px; padding: 5px 11px; cursor: pointer; }
+.RB-steps button.past { background: var(--teal-fill); color: var(--teal-ink); }
+.RB-steps button.now { background: var(--pink); border-color: var(--pink); color: #fff; }
+.RB-steps button:disabled { cursor: default; }
+.RB-cols { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+.RB-rail { display: grid; gap: 14px; position: sticky; top: 50px; }
+.RB-form { max-width: 720px; }
+.RB-form .card { margin-bottom: 14px; }
+
+/* ===================== take C: Pipeline & dossier ===================== */
+.RC-pipe { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.RC-pipe button { font: 600 12px var(--font); border: 1.5px solid var(--teal-border); background: #fff; color: var(--navy); border-radius: 999px; padding: 6px 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.RC-pipe button .n { background: var(--teal-fill); color: var(--teal-ink); border-radius: 999px; padding: 0 7px; font-size: 11px; }
+.RC-pipe button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.RC-pipe button.on .n { background: rgba(255,255,255,.15); color: #fff; }
+.RC-pipe .arrow { color: #c2c2c2; align-self: center; font-size: 12px; }
+.RC { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+.RC-list { display: grid; gap: 6px; max-height: calc(100vh - 260px); overflow-y: auto; padding-right: 4px; }
+.RC-item { border: 1.5px solid var(--teal-border); border-radius: 14px; padding: 10px 12px; cursor: pointer; background: #fff; display: grid; gap: 4px; }
+.RC-item:hover { background: var(--teal-fill); }
+.RC-item.on { border-color: var(--pink); box-shadow: inset 3px 0 0 var(--pink); }
+.RC-item .t { font-weight: 700; color: var(--navy); font-size: 13px; }
+.RC-item .s { font-size: 11px; color: #8a8a8a; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.RC-dos { border: 1.5px solid var(--pink-border); border-radius: 22px; background: #fff; overflow: hidden; }
+.RC-dos .top { padding: 18px 22px 0; background: var(--pink-fill); }
+.RC-dos .top h2 { margin: 4px 0 8px; font-size: 22px; color: var(--navy); }
+.RC-tabs { display: flex; gap: 2px; margin-top: 10px; }
+.RC-tabs button { font: 600 12.5px var(--font); background: transparent; border: 0; border-radius: 10px 10px 0 0; padding: 9px 14px; cursor: pointer; color: #8a8a8a; }
+.RC-tabs button[aria-selected=true] { background: #fff; color: var(--navy); }
+.RC-dos .body { padding: 18px 22px; }
+.RC-draft { border: 1.5px dashed var(--pink); border-radius: 14px; padding: 10px 12px; display: grid; gap: 8px; background: var(--pink-fill); }
+
+@media (max-width: 1100px) {
+  .RB-cols, .RC { grid-template-columns: 1fr; }
+  .RB-rail { position: static; }
+  .RC-list { max-height: none; }
+}
+</style>
+</head>
+<body class="save7-look">
+<div class="proto-banner"><b>PROTOTYPE</b> · the Research board and a Study · three takes, five seats · made-up people, nothing is saved — reload to start again · <b>amber</b> boxes are open questions</div>
+<div class="shell">
+  <aside class="side">
+    <img class="logo" alt="Save7" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcAAAAA4CAYAAABqkyizAABBNklEQVR42u29eZhlVXnv/3nX2vtMNfTc1Q0qJigqoIkIDqjYpdBA0zhXaYRwE58EpbFNovfGmOFWV3655sZcrxdREGISkpjEVDH3zFQNIokCcQQjooACXT1W13Smvdd6f3/sc6qru6uaPvvUwLSfZ3c9fbrrnH322mu97/td3/f7FZ7p6OuzPPSQ0tvrAVAV7r7jVJx7M05PR/3JCC9BWYJqKyIy8buqJYwcwOserHkU5Ecg95PRB3nH+Tsn/t/AQMCOHX7iM+bmkNpnt+B9B3HsMZGkfjcfKkFgGB/fybvfXarfgaP+zh0bj0dsjtim+2wfKi2BoeT3cs45Iyggz/CZjRwDAwHj4y8j28R7VABjhOXLf8Hpp0eoCiLKwECOUul4rG3uvs/EUQGyWYiip1izptLorys9Bh4Wod/VX9u/8pMvC5QzQN/k1J/q0RMVWSpCOxAc/F0iVEcE9hkxjwv8GJH7c+Lvzz39lUeO9hmNHnuPX/+SoEpWjfqKunm751mxmvNiKtlgaOGTX9wPsH/FuhMiZwOVWNO+p3gxC4LKTtl5bVFBZNL805N7Mvv37XufiM84jNo5/s4OsIh4KC0ZHLypPo76kj/ID1fi4+Z7TOpHDtjdHjx10qNXViY9oyKgexevbw8sy9Jca318Dmil+PK91+48fHwannOvWJ8dHomPLzfxPVUyPpj+E1QAQSSZcHdsPQ1MF3dsOw/Vk8lmM2QEnAfnwPvknHwYk8eYPKFdiTWvQ+T9RDFU4r3cse3bYG6mGt9CZ+eeiWDb3e3mZKT7+gzd3Y5q8Qu0FC4iimKcpJ8XEsdksyGRvQr4w6N+l4GBgM7OGGc+QUvLeuKxCCdB4x8aOTQT4Ms3ApfQ32dhBu6f9lmk21EeW8OCln9mvJTM38bfSClkhGr0OKOjZwARYACHK59BPthKNXI4MfM660MU4wXj3gV8p5HnUOmyQq8D2LPk8uOyoXkP8L5Y3RlWgoUhFidKjMepx6OHzHoDoRGzxIpZEiAnWcxqh6fktDjU8YmHAmRLpP4G2d37w/rnQZ8XpOHFQ5y/PgzsqWV1LhQzb/fc4eMwzIZjUfUK4E8APPzvRUGwdkS9kxTPmsPHC8NseMC5LwA90GOhN64v4Dz8sKNjec8iU3jNuFYxzG2s8SgtkmWfKz4IJ9+o9ARCb3xAo7fkAntrSeM4FGOZ90NYWIzOAr6r9Bih19fvpc1qV4uEVwz7ShSKCRobH8VadKlki3tXrH+nDF758MH3b2DZpst20++Gx/xrjQ0GQvU6Ucw0lLQKsUalYNqqLwl8yu1bz0bMf0f0XAoFqFagUoVSySNSqzlUDqn8Jq1/xLHinE5UQ6qGIFhKLncBxlwApb/kzq3/QFS+gvPe90tUhQ0bZFarweR6HbffuASvHyaKW7C22feEOAb8b7J9ey/nnjteG5gjF6o9e+qvbcLFf4QImDQTUsHFgF7Ali3trFkzMlFhNXPseCi5GGPfS5hphaJibeMX6JzSUhCqQ/fQ2VlmYCCgv792bRIQ2BaiOOV3n9HnAayF6NiTkB56zAZ6Veh3u5ZdemIhyH5KVT/SajILY/UUNaaokQrioZZMIskfh44gMaqxxlSStVpBxYop5CU4Iyv2jGFf+bORFZ/cHBP/Hxm86p6kzO+yDVeDqm2BmBZB5jwATD5iVC1GBM1Nug9bQjEfFgWb4to84BWc8H6lp5daUlIbLSv0xvtk3c2gJ5U1dpOr8Ln62jmxoUGuE3q9vmJ9yKPE4l0QELZAuu8904dFEO/tNMtmJhDTAqhFpPEkRSlItq3sS3+j6NugW9JWgrF3Qd7aVpfMqYYPg+AgDKatTrbc8BKybX+NNR/GWigWYXg4Tn5XBJmUtR/tXiSBUQ75v3GsjI97VCEIlpJv+TRifovbt/wvRL4IKKomQQxm4dixwwIxPlxLa2s7o2MxIhbV5hDVctnT0rKCseLZwK0MDFg6O+Mj/mtSXQiZwrcpjj1CLvdKqlWPauNZuat68vnFlMtvBbbS329qiEv6L9LZG7NlSxZ8J8WiIuJxzqSK0MWSEMq/HRb4QVWJnaLq8d7M87xXnBOSbPKYIM9a5mpGVl7+R6L2jwoStI9qlX2+5GpT0phkYthnSlCFibgo9VccqmNa1THFCxK0GHthRblwpGP9P5a8+4zsuWpwgJ6gs1blHNN1i8QxqglWo/N4zyX2aFCLWyjI0xJv3edKBwIxC2K8kmKBHdUqFvOafSsGX710kEkVxsOafH/dUVb32WQVmjvUQUENZEZdVDXqtgDwaKW2thmNUU1SWZ33ClABxOrU/+bVoZrAXZoqgdjnS26JzZ+5p+Py9ct39X9pgJ6ABp7hg49Qct+S62k8BpokFsVmyuC37ZbzyLXdTy77YcplT7HoasErqAW+5lIVqS0MIpY4VkZGYrxfQmvr/+XO7du44YaViHj6+uwsBcDafqZcXJtrdbi3ibNW7RmjiFwE6CEL/pGJRhIcjWwklxVUNdXnokoYArIGgGXLpGloGCCU0wgzLyeKtDZWjV6bks0aKpXHqJhv1wK/nzI5auq+z8BZv4ZjhGCEXv/Eko8e9+kV629rk9znYnz7kC/HcZK1WQErTc4RqS3SggSADvuKK2vsW214SYsN7t+18rLVnfTGyQLSQAgEqf+cr/PgdSTHT1+xPnP8zmv3Cgy0mBABn+Z9FXULTNYiwerJ6xz0ewCbyXxn3Ff3hVijzOBe+TEUqC2SwaH/sXD31T9P9nOH/KEJEPM6JoeOzzMla808P2JHfMVnjfnc4PLLfnUVvS65H+nmSDP3DZ2cBU1UfhsvIpvfAqxgZCSuBbzZy0ySRSggdsqBkZhc7lwWtX6TjRtfSXe3S1UVHRW76jH09nq23HgixpxFqaQHJ8oMIAjFkmA4l1tu6ahd/9QPVD04irmeUplDKurG7p+hUgH150yMYTOLbz2ARn4NuRxJwZAKVvRksyDcypo1FQYGAuZ20ZmF7LjHdNPvBpdf9quLwsI9LSZ81z5fjpJBlqDZoHfUUUasIGafL8cIL2kl3Lq74+Mf7aQ31oaC4LPvCKMRURBv5HpURFNUf/XbFKtHVNdMQkZJssQes+iJKw4Y5Nv5BOn2c4mxByIY6Ds0ML/wDgGJ8FogbLEiVyfw58Pzhv2aiT2/zs6Yrbe8h0L+68ROqVY9xszdxBIRjASMjMQE4Ym0ZG5n06YTEPEzGgRXrUrey2S6aG3N4L1jphYuEcG5mJbWdvLBuyfBrUwLgx4Yu59q5cdksyZlsDFUq0oQnERceu0kAlPa++NqyMy5RBHHWhlNG5iR/iPgz+do8IMNOrj8kx15Y2/LSnDifl+OBcJZDHxT7V0EJY19VR0LTf5vB1d+7CKhN07IMc/N4+VPZJ2Ahra8bdhXhkKMTVmhmaJGgLxldPknO4Rer0zMBQPgRe4IxNQ2fucG/rSYYMRXyohumhyYX6iHQeywVuLFNrd6b8flvy30u4F5SuIMqgkb8vbNJ5HJfb1GWklfkTR9RSZgfDwmkz2BjLmBLVuy9PdLU4v64Qu8qgH9DaJo5rOxJAiC8xcfArdOB4N2dzskuIVMJv3EUHUUCoLX82qfaVJXxyLKnVtORMyvJwEs1f3xZDKGcvlRhsfvB+QI+PM5l7g+LLBBAhP/a6vJnDii1dgg8zRpxTiUoka+RbN/v2fF5acL/amhpPk/VqrSZRc++bf7RfSOFhOqoC5NdRHjXbvJtFbFr0pe3WAnBx1r/MCIr6ogc5Uw+IKEePS+xYNXPZGG+fg8Pey4j3wo5gt7llx+3Co2zMvza2BDUjE4/RrZbCtx7OYt+E0OgmNjEe3tb0B8L93drkbuoMn9LYuIctvmM8hkX0u57GfhuxpKJSUIzuTOra+it9ej0wxsvSrS+CZKJVJDzSKSMFA5/xmD7jNXx0Lsz6atJcT7dHDqBPwpt9LdXWVgwD6X4c8B3mGFfrdv+d71S0y+c8hXovkKfgcXezERXkMxoYXrHjuhJzdB+X8OHjs4WTTZl7le0SZgUNQgqvi1yV9PqT13vQrw1MJlD8e4n+fEiqJ+9itAJRBBMDe80OHPw55fqeC0xYSLCPRKQXQHO+YhAEqvZ9vmd9PW9nbGxmJEnh37CSIBo6OOMPwUt216Dd3dzUOh9f0tlY+Qy0nq/a1nGltVR0tLQKQfSmb3KjMtDKoqZFv/k2r1x6mvSdVQLgOcwbZtL6W319OTIptKArKiXDCJHJQe/hS58bkOfyoqq7jbPbXy0qXG8D9HfdXLbO6JNwgljWo1XmRyp7RX9lwu9Pod9Njn4n1eRa8TUBtW7hh21SZh0FgUOvUlf5AXul2daq/02VMf7q0K5p7c3OwDaoCxw65SBr/5RfhzCijUV+KFJvf+3R3ruju5O1b67NzvARr5fbzX1AvebCUJzimFfIiXPwSU/n5pjt7fGXPrrQXw76dcnk2Y11CtgroP0dMTTOyrTdeS0dkZE5j0MKiI4L2jtTWHxO86ZK+zkd7I7m7Htm2LgbdRLpMq4dBJ8OeSju889+HPDVZAcxpestDkFldx/tmUxQuYMY0U+NSuZetaE1bdc68KTALUTMCgYioa+4IJjx+Ky29MXu2qjVfS3ype7/A1wv8s7//5Fgnx8iL8eZQE01SIfCjmiuHjLl8CD+mkfds5CIBbbzkFkTMplaRptqeqRzVGNaa5XjQmWJXj44rwfrZvX35UVuUzy3pZQAjlbFpaX0K1OnsLWVIBeXK5kznzjW9CRKdt6ahXR5G7scZItemfJQWVC1JVXXWyjkZvo1BYRBz7dAlRDf405mZOPz16rsOfsMHVoLkPV9Wp0FySqKgqGiu45GdzZIz6gr/A5I4LA3l3wqrreY4SYhIY1GL6Exg0dYDyCdNTzq+/7+TqSwP/zRFXLdv0VeYxL4hWBHmR/XnU57ekTttNZkXF6f9NEoRVdi73088hl8ug6pocayWXM7S1BbS1BbS0JI3lzczvhFDiaW1pR6Jzj8qq5BjhPWMuwojOOhRR3wdTPgJM359XD+rnX/ggUfQj8jlJmTzYhLTi38GWLe2pkwUxawiCZu6PTeBYvX5O4M96wtXMWRNjSfqRD294Fx1ase5lwOtKCbRmmtkPCrGyyOSCBZK1i0wuCLHimw6CqKKqXrsA+muN37NU1dQDd+oTSH7K4c9YAoP6SvW2YVfdm8GmClCCSEUdXjkvIVYkqjAJKxRZ8vTVv0T4fl4CZJbWgTr7c9hVilrNzjr7s9kxOfQ0OtdQ6AFfcQtM5pLdKz62Rrh7zljNASJvbvpdvFfyeaEa3U+1ci3ee5DzyWQ+SBwr3tMEvJrIQylnA//UlPTZ9u3LIT6f4gxUu8dSBZZKgL6Pgb7P0Nk5Nq1MWR0GvW3LzYSZ11IqN84BEBGiyFMoLKNYOhPY1oAqTAIPP/BAyJ6dZ1OpSCp4WPHksoZS5b/ItTxYgz/dLN5jaGsLZkQKLZuFPdXw0H9I+pOc6uvaTSY7olVvUiqIKKoZseK87h/y5S+K52cq8oZA5KMFCRcVNVKTsrpUsGXvREXfvLPj0y0rd31hvFmx4elUQtoktGGTBMoYHxiTB1dpnQoGlaFrh/euWHdbwYS/UfVlR+OEI1vUSK2YU/et2P2qpYP8+HBdS9C7MmLfNKZVldlBQn2LhHaYyr3L9n/xqdmCP2sqFSwwuWCGKjIGXTGcj732CK8BwVf2LPno69j30nFFJY3mbWMBUHklzjWDh3uyWSGqPoru7eTcS8Zrr/8dWzf9JtnMdbV2A0mdIMSRgPwawJTSYscqfYZ7L62tbYyOOmTWadCGOHa0tqxklNXATQevYxoY1MU3Uyz+aRPB2ROEBimvAbYdsypMXRh8aPevk8mcSKWi6fZH1ZPJGirVW+jsjCc15s8GUxi8LzIy8vdAjBhSk/pElHJZIPglAA89pJOhMzHmVwMxiJIaNhdQg/FVrX5o6a6r76i9/K+7j//YNRLL7TljX1ZR59NIdAkiVRwW22GCyiuA70OP1JmPM1XRZDAypvGtaPWxCV5JqpuhfqHHGJW7Dq+M6mzQAyLXe9WPkDopUNducsFwXF4N/Fdt3CZk0bznzpLEnwVRPSJJ1Kal0hTFimAw19egXDPTFaCCBog4dHTIl/8B1DW/aBkyVp9O/rZBoXcOodDYLTH5l+8P9S+F3k8op9gZ2ko7SgBEFuF9vUpKB/XlcgEjw7dy3iXjDAzkgJi2NuH00/+JbRs/QGvbBYyPRWiqhV2pxh7VlWzatIi1a4caFnyekD7Ti2o9jnPJZlWMXATcOC0ceBCu/B7bN/2IXD5di8ZE87murgUfN60gN1OwY2M9jwV5iKK0YsF1+POmWYU/VRVjBO8PcN7aT8z4+x8mxK7K8mb4YYr6vASmpNEjS3dffccAPcEqdgCvs/LUlT/du+LjPe3k/q6Ci0CtpguwriChLfr4V4Dv75j5BdfnxFrn9YuLdn15x8wufgfvd50Nuj8f3TUyrnszYpdWSbP3KuLUo0YvAK44eC8SWTSJ7f1lE48uMbm2irpDsnMFxjVqMjAZO+wqRQ0qWwW0Z1bgT9VQrMTq9i0d/Mr6WQhKcw6FDvmyy0t4+e4V6/pksPueVKLvjQVAMjNzt0wywG1tjtNPj3ngmjCh4ts7WdD+HrwPUjsuiIBzyxkbXg4MsWGDHDOxoi6qve3WV2PNmTMsffbMn53ArasZ2LSCzrWDE1Js08Gg2zbeQiaTBMDGrzNRhbETqjDfPSZrnzpLVfR84jgdXJ0kQoZSOYE/67DzbM+ZLVvayeeLtLUJo6PatEjCFImVnQGRYkESiBhYBV642yurvNJjDui+e2JRs8Tksw5NBZXE+CBjCoxEIyfVPmN2hJLVLUyk1/ZbWNzs+PrDYcEJGPTn1w7v7ajDoC5NQmaKGiHImweXf7JDdvfumgwLL91/5cj+FevWFjVaUiH2LnGnEEXU4PNe9auhBO0xXlMo/STwp1buXfbU156cTfZnMiaYXcvWtS7fs6wMOwVWNhm4kiQE5qftSIBA5Kt6Qs9pPPFwNBtw/uQAOBOMRxC5kGuu+WNOPz3immtCfr7I0/sxz203/zsHDnydUtkjTfXxCYFJjGY3bFB6e4+1+ksyYWM+REtLUNM3DVJVHY0Ghro0WntbK2Nj7wW+yqpVUwfAVauS17y9kWLpj1NDtIkqTMDY8PnAd58RBk3UXzx3bjoBJ6cl7Q+p3HKS9odK5eYJ+HMquHemjziO6eyMZ8QGanbhHZ8zwSufXnHpWTLYe4/SkwHihJjx6d37fOmrMb61SjqDF4/6pViD8T9JXpkdIoyKuJr0mgpXzlKC0wX0CyY9DJqowqhbIJm2ESmvAv5txySPQIDFg1fdM9Xv7l9++Wtz1rZWU0LSoJiE/flvswV/Hn4UC+OxcFU8m8FirubKuEZuqcm/Zk9pd89y+j+raR0jjjEAFmv62Jpyny6h/BcKr+LEl/0rmzb9LmvXDgF1ge0HgN+ccVixMekzy/ZNH6JaSU9FDsO62koKlRYHXi8CvjqtSkuieVqDQTd/n3z+9ZTLjRvR1lVhvJwPfO6oPYj1fsHeXk/M2bS2ZtPvj4qlWNI5Y38yl2amlJpdUzQxwrWtZL++Z8Xl75fB3geS1/ssu7qKS5HLZnYh6XfP3Tve7QHVaumOkVB3ZQg6Ehi00fVJVUQUzAXAv606LCk4nGn4OIXw5RSjIaMXtUrG7NNSLA2uFwn8ae2Ir4w5z5akot3g5movjedHg7w54CuuYML/fmDlJ6+Xnb0PzhYUGoA+jTGvbLoKLBY9LS0fQCqncee2v2TfyNfp7Ewqti1bsrzsZcqePc1lQcmeljYofebYuvFMcrnXUKmm2VcD1Yg4/hnGvBrnGq0EbU0a7c1s2XIya9Y8PK3X4QQMuulmMuHrKZXSKEKZWpP/6dx668sQ+cW0sOshcmyypsZpaHyln2B/ln/EaPF7cwR/Jkc2K/T0GPr7hZ6exq59wwY9poRKzZN+BjLbssaal+ClGZV7D6xcf5VXd4UMdj+R3MJLQ16RNQ8+WvFvqEFYOxpFcKeBFWe2BPSi9JgH2Wl66Gn4WdnABn2mvaUJGHTf343u6Vi3vcUGv1n1cSo2aElj8aLvfGrlpQXZeW1xcoV0+IKqtSrN67qzywmfxKTZi22RMBjW8t0de64arLXSzHrz+75q1vTQY/p5WHo4WRsdk/nY8zvabXQoeTFBRavXKj1vgodVJ5T1Z5YF+jDWnNV0s7KIYXzckcn8CtnstSzmv3P71q9Rjv+FNWueYrLt0o4dflYd34/cn7yIbBYqlcYCoKoShkIUPQ18CtickiiUwJJu9ENAzwQsO10w8u5mxos9KWHQRBWmrS2Hjr0LuG5a2LUeqG6/fQGuclZN/NqmY39mDJXSLXR3uzmDP1HlvtUles/1KckuR/3nej+dMf4nZXVo4vPXTGYrJY3VItkFkvmDMeWjwyvX/6siX5OdX3qQRw9WJv1A97OwijMaVGoBNtU97z3GSmhHwsAVi14fq79EwUiqfsDYt0h4vFU9A7g7UYU58r7W9+l2LVv3ioyY15WS/cOGA6CiYgTwcsNcwZ8gevrOa4tpf7v3WVidCtgxrcaLTf60fcv3/OHS3f2fSxwjZhbaD7AM4NxlMyILJGKJIk+1qmSzJ5HNfh7GP8vtW24mCP+RVffeg9Ro8XVllNnqE6sv7vfe3MaYvpdSKY30mSObtUTV/+DctVvZtukxstlfTaEiU2dndjMw8P/VYMkjiTx1NuiGDT/iLWckMGiplEawOxEYEb0A+Ptp4ch6n6CvnkmhsJRiMa04uKVUVGwwN9qfdccNZAlnbrmb7Zsb544InjA0RNUnGS5eMmFPNWlMumqMQfLxD8vjsjcjdmlEc2owtdJf9/uyDzEL2iTz8VFfvXRkxfq7FP5xOChulif/dn+9AXYH77CruHveSAmTL72kMbHVL+xbse6PVLE0WDGIqM9KYMYl/r2Op6/63tHIIauS5nV1C1t3jA6P78piO9KxQfE5saasZk0SAE+Wo8hC+sCad7WbTDjky7E0WHHW2Z8HfGUs53VrUsn2ulkVRFcP+BV7Oy7/pkDDMngi6rMEtqLuscW7vvJbtedMnh3qTWJHfMVlTfBne1esv3npYO/D+oZLQx6cudaIgDx3MF7dRRgsJ4pmQg806eetVj2ViicIFpEv/DbV6m9z11u+x123fYOo1Me573lsIlD195uaXqTOoOt70kMynjmXlnxHzdXeNkw/VRUwm2p/3Uw2u77hSlLEUK16stlXUxk/E5F7pmVn7thh6e1NYNAwTAJg41BMogqjvIO+vgV0dw9PSRI5SJA5f5L6i0nJ/vwRo8Xvzxn8qQoiGXK5t6X+/VwWhqKnpyMKTWYk7luxbqDFhB88kI6ROJXbu41R3e/L3iA2L8HZRszZPs4PDnesv1mMfl12fvlbcHecOFL0BKvY4OYLpqqRSshLcEpQ9+JunKhDTjJEzi9mktDAUe/9T/56dF/Hum0tNrwkLRu0oh4H5yk9n2WagFSv9hW/xquSrldKfYvJmGFfubt1Av6cXaTLoxgx2YIEbxPSj0nZlV72bDTPjfEUJMxVtHqNwlkzv9/49rVDoN+gUJCm5dCODIQBcayMjsZUKooNfp1c7n9jsz/gzm3/yl23vQsRrQWC6fUyaUL6TN3FiGjDoVVVCaxlbPwA2NtqgewGqpV0Itqqnkw2caIA6OpiGlKKr6EaN1IspiOkHFSFWcqCljOn1SFc1VmDK3U1lYqQrvnXk8mAcBPd3S61VF3aIFYquVRnuRxRLDnQ0WP6kipXReplJptIkxsuFtBRjdywrzgrsqLVhh8XzL0HVnzivpHl63/nsQX/bWEnvbEgOkBPMJdiwYddLyWN/KhGLs05rnE0rlWnYuNjZ4OCR2+IVVPJ0AliihppgJyyb8Xgq+vu8IdLTXXT74ZO+L2FKG8taZy4KqW0+QHtmwR/zkXrAGNNjElRqw45tnkwD6xQO6wVt9hk37a747JPyIPXRjCzhrhCpH/N+PgImczM49UigkiAiFAue0ZGYrxvJZv7MMbcwZ3b7+OO7RfT15eZgKGatT3q6UmUTe7YeDzGnJMIfTf6nuLJ5RS4m3PP3Y2qIdz1bcrlx8mEae6TrUmjvZd7b25LBBymWMjqbNBzL/wRcfyf5FJrg3oCqyBrapWlHNkfiVIqvRYbnES1qkiKCStiKRY96A2HBPC5O2xz59GDft1odtmur+wY1+rmRSZrfaJnOdOiblbAVtXpkC/HFY01J8FbCkH4N4vz7T8YWfHJnr0v+djx9UA4Xw7wgpj6tTZ6gtZ+emmADcpSCneN+srTOQlSyf0o6haYjEWC1VMng32JW3wlOrPNZJZUcb5RqFVBQ6wd9uWRDMHWBErc4OZyz6yZMRF99gp1C2JGfeTyEnzuwLL1JyqI6Mw4+Rj6+w0XXvgUUeX3yOfNrErPiCRVoffK2JijXPYEwVvIZf+JJQse4M5tlwCKiG+qGqxbAXnzPlrbCjgXNw7t1ohRRm8AhOuuy9D522UwW8jmaNi3L2lPcLS2dlAMzgNk2mqp/rrITYQhh4s0H3t/ZlVQt3pKSbK6a3zoz01d/SfwpxBHP+DfH/hhDf70z0/bFsRIsG7MV/dnJbB+lsxUJckYA0FkTKt+yJedEXlpqwk3ZOLM94dXfPJzOzs+vrwemJ+rBrjHLvLdZ2XXF8ZF2FqQQDVVgi4SqyKqa6YWpX6odg/l/DBZV306JZ5AQe5qH7xyT0Lbf3b2pT4HnwOp4shL0BpZd/VM7ocnlZL2Wc5/z3UcGP4SCxeEKNGskxhEbE0w2jM25jDmteTy/8Bd2+9hy82vp7vbpQ6CSa+d4PWilMomirWW8fExqtwOKC9/eVxb9G+qaZuaVM30CVHsIkCnrZbqrzu5heJ4Wt1SQ6WiBOErKZdfdwjxaLL6i5P06i/gCUNAbqa3188p/DmnE7DX99NlFu/80i/KEn/EAgGG2XYUF8QYxFY01v2+FHtY0mbCz7ZK5rvDKy7/b0KvN7Xd0Ofv8tdfY6P5GxIIOlWlYooaAfKW0eWf7Ki7QjBJ+UTpCRx6Ttr2B0VFRESosz9Pfh6PSXP6pWkcPkwChcZLTf6cvSvWfdCq7glmoGitvUNXUnGtufD3GB6+jkULQhIau58DrUyDiKVS8YyOxoTh28kVvsW2LR+dRKlvTH6st9dz++ZTCcMz0nnsqSeXB7ibtWsHUTUTAWNB8VuUik+mgotFLKWSIHI2d2w8HpGpndvrMOiaNT8mds3AoI5CQbD+POAg6SVRf1G2bHkJwhm19of08Gdgbnq+Nb8fAcbR75Q+27Hzq9uLGl2SE2tCscajbg4gIBEkiPG635diFT2u1WSvO7DiE3/7w5O7MlPtaz2PAqBPHDla7hnz1aezWNNo4lEjU7h2k2ktietMXk08ExOiCrp72Z5Ts5hXljTWRtsf6uzPEV8ZDpDtSYXS63jxOAJTCzESpCJlHDR/Nir/LxJOqaiLTZPJn5loBO7q8qgaVl/w2wwNf5GWloAgMFP5pM0qPDpedMRxnraWv2Xbpj+ZJKvViPQZqPwG+bxNB+2hGAH1t9SgyiRgDAwEnNldAtlGLqsNw6CJy31Ma0sLsXnfUZ3bk2pKEbmJTGoYtKYKo2sOEQVPPlMw7p20tuZxzqVog3EJ/Ol+wDe//aMJR/nnNRTT7ZSeYNng1V8fpvx+qzKywGRtzUfNzwUUJEhQqe0TLjC5jx6/v2PTUysvLUCvzhc5ZrZh0AF6gpW7vjBuhC0FE6b1qlSDYBJxbOAUnbwGBsasbjNZo6lc6NW1mIx62NE+eOWePrqsPKdNoGdHQSEvARH+B079kzkJtHEzaDFljQmNPd4Y+T9OvWvWysocJi+m9PQYzrvgU5TKFyGykwXtAdbKHAZCW9sjjFnQ/hds3fiHDQRBobPT0deXwfmupLIR0zBMaW3A+HiRgC2ATgSOeoUjciOxk1SwYV0aDf3IIUGJadmgNzM2HqeGQRNVmDew6foT6O1NKs46Q1ZkzYScbho4NwwT54fnMfw5BRwaD9ATrNh5zU2jGp9Z0fieRSYX5CUwHnVzEQhNrSLc60vRQpM9p6CZm3nDpUE/3c/LPcFVEy0K3BCpT2tKbIo+Rj2duvLSQpLMIBPBVPS8pKeu8TmdvI+KeP03Bel6Ef6c4h6J5hPC849F5fK8hEIKhRyTiBtoiHmFEcn6JvMMc4TGZm9vAoeec96/UDxwGqXS/0HkAO3tAWFYJ0u4Wd8jVLWMjsW0tv4VW295P52d8TPuCfb1GUBpK5xFIf+KpF+PRqXPPLkcqN7H2Rc+NQGpAnR1JT8zhW9SHB8kCGyKpKAujfZGtm88ld5ePyXrtQ6Drl77Y5y7n3w+DQwqeB/T2pojzHUCwnHH2Rq03IqyinJK9ZcE/nSomy/257wdnYkYtF2566qH2nZeuWokjn7XK/+1yORsi2SMol5Rp7NcBRgIkyCYO2fvU+FXE+WYLvN8hUEXB9m7R330yzRsUEFMhdi3mPD4Az58Yx0GFXr97qWXrgR9Y0kb39uvsz9HfHXIZrIvwp9HOeJkqVy2ePdXbh1ypZtrjGqX0v9yRqoxM60/XV+fZW33IO8893+g9tcol/8C1Sdpa7Xkc7ZWBczePqGI4H1i7xOEf8PAphV0dU29Z3bk715EEJDq2pIKEIzcOAF/Tk4QtM/S2TmGMdvJ5UiVDCTSaBbMhw+Bbadjg8KNBAHpK3AFlQsA5a2Lkuy0PP5m8vkOosinqGRr8Gf8Xc5798PzzP7UVGcd8UjpIFFnYQroot1Xfu2Hwc7Txn38W5G6bxckNAtNztoki5nVhNEg4X5fihZL9qP7OtZ1S22vci6IDI2eNfNZTccG7QnkyS+WBN2cng2Kz4nFCWsAHj/h8QDAmmBVu8m2xHjXaIt/An+GinLnwie/uF/nCf5sdkx0zpxUJIHqA7s+YVRbSYOayAz1404fTOqyXNpnOeecX/DO1X+Gzb6W8dLvUq1+C2upVYUGVY+qm3GINFFQcbS2LqYqf4yIcsopMq30WVLZLAS9MOm5a7iyUYwJGBuLMNxGX5/hkUeEvj47cT50cvLTs7GmRiKpLaS8dvPAAyGrOh1HM/K1civj4xHG2BRwpU2qPH0HW7a0c0pXVLuGNYQp91Pq8KeRmxDReYU/E0Zx42ciSC5pG57r7FCtaXee+WR/acHgl/6hffDKN1ecnl308T8bGFlscrZFwhrhYnb2ChW1JZyq8FfJfmC3ny0oVGowVJoTMCb1wlXTgFRzQ1VdajZojeV5rtJlH3/i8bj2DJ0vdcfGxqE9SfZe5fr5ZH82OybSbO/1sS8dXhBd+tSVT1bxv18gNDIXZEvS+AEmWYGjp8ewYYMgcgD4GvA1bt9yBsXih4H3kM+fSGChVIY4drUAbWZsT3C8qMAlDAz8OZ2de6eU9apLn1XGLqC1bQnjqdoHPPm8ZWzsTlZf+LOJaufw6icZyRvZvuUpMuHxSRN5QxM7kUbL517J0J63IuyYUhotgUcFkUfYtukBCvm3UGrQIqmuCpPPL6NcfisiWxkYCKiMr6ZalSbYnw4X3zLv8Kf3ccrnyuO9wTcv2p1UXQh0GaHfLdr9pTuBO4vHXfbSosbvd6ofMsibF5hcUNKYkkYeRGtWOzIzfoORW2RyLx925bUCfQOz5KHmwSXwYyrCjfd4A0bTwqDFTPgtjSq/zEvw0jJxQ359NV9GBD1173FLXtH5dP9PdOWlhb2eVYn6Sxr409hhVx0Kwszts639efRx8XHqGYQ3KhLP5fXqGy4N5cGr/mnvinVdC03uwiFfdjVVpGdRAJy8EPf2UlMuSej/IvcD99PX96csae0ksh9C/Vra2hYTRdQczWk6EB5sIF/AePFs4Bu1YBdPUS0pai6GlJWoqqFaBSO/yvZNN6FikCkydhXhti0OyOJ92lTIkwkN5crFwA6mUUY7+F3NjQThW9BUFkmJ8HOpvBbVbdyx9bXY4DVUKppKIDyXsxRL3+X898wP/KmqBIHg4j2IvpPAlnDO4L02BJyKBadRzWaLZrRok+ohcRmoq7TI01f/ErgCuGLsuN/79XFXfb8Tulol82qLMKJVFHUyAxNfapaDKvIBoG/VDKvmK7gWCWyReF3k/B15b4KyNF7NxljGsjzVqGdhnQ36sid7S3s71m1uMcHHyj5uULtWfQZrqvhdYSC7AYbIvKFg7EvLSVJiGoY/E+f3SfDn3Dl4KIm4eNX7pyN0dd7bclWrRsUe89hnsRphxQRUJ1XAsw+HPrhSFZV99pPrxl317VlsexWvMsckruCY9tSY8E9Lbs6GDcLAgKWtTTj99BKwBdjCwKYVlEofBD5KofB61EO54tJZ7BxhsazAW4FvMJX0WW9v3dV8FcVS2r42IYogkzmJTOakZ/z/5TJNNJFbSmVA382WLe3ImpFpKttkkTHuFsbGP4cxQQ1qlgZmagK5qp6HiLJt4ztpbzWMjMSIBOngz/KNNYbsHFkfTSEeBjH3PfDwbFtrJRDXBmlURkjpsg+djD3l4ZNjebr3e8D3lJ6/GOnYdw4iv2ORC1tN1h7wZZ2BfQ1TJhbg9CS7vjaaaXdwg2Dj4Ikle674OfPIBrXK9WV1H09Rsfm8CU3kywMLf3H1EIDzel7eBpQ08inMb8WLCiJ98wV/SnId0cpdVz3Ec+vwO9hgO5+68sldHZd9aqnN/13Vl+MUno9NBsA0i0fio+ansB8aBL5MT89VvP1N7wHzx7S0nM74uG9KGFZEcF5QffWUkFvd7y4yXbS35lIt7JMX1mpViSJ/TBVjWveMJNg6WluXMTZ+PtA3ZWVbb11YfeFP2bbpPygU3k6p1GBSIQmZKJv5VTZvPgnhLNSn3L80lrGxGG9unH/2pwinnFKgp6fIKacIDz2kKX0B/TNAZ5o6K374UAhd6K2yi83A5qFl6369qNGncya4OFZPjG/CakkkUo+ornxqp10B/BJ6BHpnNJv3QjZput9pYaVLu3dKE2zQhe323r1j0eN5CV5e0biRyq12b83WehP8fvasrqgjjfZnBmtHXGXfkmrbbfMJf4LKUysvLRy3c2U5cdg4OYVRMfTS6+eeTd1nZVf33+/puKx7oc2fd2COodCAbdteAZUm3yYLO3Y8iWplwtUcbqKr61Z+97c/Tz7/qSa85pLg6h2gSyb2bw4NgAlhZ/vm3yCKaNrSKfl9e4xVSJNVjCqiFwP/dhRptCTAG7mBIHg7qo3DoAm7VbDRp1A9jUq1HsAbgz/zOUux+ADnr/3Js0L7M5fzE3ul3d2zAt3sXnrpyjZpaakQawUnjc8Oq5IRo2L3LXjyi0M76LF7eFgX7bnqe8BvDq38xA2hmK+j5OPE2LDhz0iaqhQjJp93ZkESAGcj5/CakH+6RLjWz702aE8gj/ZW9q1YtzEvwfqyxsdUuSmoxdhhVy6VTXAPwMjxQyeKM79W2/+zjcKfBRPa2PvbZOivhuca/jz8qGYqvi7x9txqwn9IFWRI5OMljb6fwbRFTSWCjQZAiX+EWtvEIu7IBZZScQ0it9PXpxPO76tWOUQ+zfbNv0ah8K7GK5djiDh9fRYRx/ZNbyAMXk+prAjPlaZsk0ijmXex7aaXIvLLCTh3Khg0lk2MjX0eYzKNw6A15qnwOygmVaKQ7L2BcOOh+5M8T5t3k0XN2PALgaGrqD62KbwAHS5e4HPBsJavAdavmtRGAQSys/fm3csv+5NFNvf/hrWaeo4oqBURp3FLzeNOnn+j8nANLrY3VNStbwBZ8gUJ7JhG9x+/80u/AIhd/M6FJpfS/FbEq4qHGxLj4heb39Mzqbvs4sGrnti9fN3/WBLkrh3y5bhZz81jD4DKCGG4rLaXla46y2QtpfJpwO0MDSWOEp2dMQ88ENLX50H7CIJ3papcnumo61sKHyFfEKKROceRmxp/52Pa2/OM6fuBKyaqvalg0DVrfsa2zf9BIX9WzSjXNuyfBzblGCimDn/aW5PKdMf8N797n7Sl7NghE8lX2uMIU+ZkUROR3YGYQFXFYGwKhp71qHj09KSKSbYPksnfEytddsiGNw376l9bkbDmkyXp6jPFeFMG6EoBhR3LU1Aj+Vidlrl1rMfJ2jgcmsCgi1r5j31j0WM5CX4lqQKfCV1SDcUiJto26Xad71VpVE5LUc1g7aiv7LW58M75hT9rQEjZ2WRcdouyXJsVHpjLKlLodwP0BMt39/7NnhXruhdK9uwDWpkTKDQAfoYxSxPfyZS9IJWKIvwG8Fc8/bTjmmtCTjpJGR21dHdHbL01bBIqVMSAMgIcJL0kEFzMwECOytgHarJfzy0ljDrxxulHgC9NiG5PC4NyI0Fw1qwkE8+0jueeZfAnqrz3vaOz/8V5xCVNn96n6hsURrXqs4Sn7ez4+Kmyq/dHj7A++0oG4ySJ6Y/Kuk5ykr4bWROtS3FoNRI/OluEC0HGalCfmz+LpAkYdFNBwvVlPRY2qNhRX1UHtwMceMkfLI6jyttKxGjijddQUV8woR3x/vZFT1xxYL7hTxH8ysGvj/OclrvDK8gurx8rmfh7IaYlTp8INhIA9T8J7JupTt4kpsFG67KnpeXXuG3L51i95o8nEWRibr11KUF4KZWKpibCTKiz8AQAG04ReoH+/qQlozT2TlpbTmhqn3H+Dku5rITB6dyx5bWI/KC2Nzc1DCq6kfHxv8KYDN4zZ0GwDn8ac8OzAv5MEOAs2zavRbWMiGBTtr/EQBgIar/DOecMH2TjJnCbEb5f1lhAA0ldPquGYsI8wd8MH3f52gVPX7lvcl/pAczv5yUIRjVykgoCVQKxROr2iyYU/5klwKjEKM74M/csX4dRCVTEpbsXXlttxlaNf2zBU1/6qaLSmHfeQRi0rPEzwqCK+ryEpqTRT4da7Q8BfBS9pc1kloxo1ZvG3R+MVxWpsT/nEf4Uj6JQ2Ldi3Rr1ppr0Zzaj6qJCbL69dP+VI3O5n1iHQlfsvvrnuzou/+wym/vyfl+adTQvQLiD2K1LQYg4dH+pWPTkc5/l9q1vxbtNwH5UX4W1HyIMX0appBhjmtr+E//9ZPFdJodBcxdjrdYC73NPCzGRRgsYG/kw8IOaNNrUMOg5a3/O1o330drSSbE0Ey0mxw5/jo9X8dHNRxXxnquq2TkQWUw2s7H5WaCQycDY2NuAb9USK1eH23w1/4NyWNydwS5P26skiBnXqm+RzJtLPvru3hWXf8N7HrEiiw1ckBF71qhGKinHUxCfxdiqup927LlqLJFpmzlWX72JPCv2z61t7pGLEXImQ9GNXQH8PmxoKJmSOgy6ePG/792/52cFCU9M2himDWQ+J1Yq3t150qNXVpJlXs8LxKhoY2uGgmYJzIhWdmvUMq/wp9SYvwaW5yTcPBMrgUUYMZU3AvfPBov4mQUluqzs+spX9q5Y94F2yXYOzzIUGpBpHaBSHCQMVxBF2gSD0lAseQr5swjCsyZsOssVasFPmhqXUgnE3gMkrgxJlu4YuHUpFV1DqSRzFAxmxwqqUgFPNz/q28CpndHBFp8pYNDAXo+1nXMIg9bhz+9w3nsenZKoM19VYKXiZyTAexW880fCbV1W9v316N4Vl+8omLAr8mWXNiutB8GsBC8tSPA/tGZmFqlnVKtNZKD1CtOiUr13kszhjI9RRWOdgUbp2GsUKFJNP/I9gTzcW93bse6WvAk+lajrTB3IFEysXpz6bcnfLw33qZ5dSSWppq7FBLbq3PZl+/56dL7hz3rTaVEjPzNwlIAwj3M72bd2jkvLQfy9DDYXzWKDvKGz8wDCreTzNI3rixhKZcfISMzoaMzIaEwU+aaCn+LJZSGKfkKQ/25iy9btJvQnK8G7aWtbQBy7ptsfmEc2aKXiyedP5JeFswCtOVswJQxa8ZsZGy9jTDAnqg2Hw5/TeRjO171r9tTEKm7qt++qB6/rXGLF09QzJoipaOyHfDke9uV4yJfjMY2caTKTETDjGiFqbgbon2ElmMPMeU0zJ5D81Gb8C2swqDE3Hs3FodavZ0Y1GoqMvQ9gz3Hm1FDMSWnMb0EkVhVjuT6BP3fLs4NN19yYHDY+88wK7Qk69lz1aNlFf9pmMpZZNJ02tT+/TKk8U/tnFpFg4mwaklRPNiuI/EPNF9AeEgzUXYx3ze6F+Rk8019DECROFhylYbunx7B27RN4fx/5HMy+kGwiED4+ViVm47OG/TlnR7dXVBYPLrl9xFd/kNgdNZco1haaACQQJJAmkYtEpiwjFR/fv2TXlfcrKt3zXJXMBVwGyOLjqt8pavRoXoLpnOJ9PinY7ztu8Mo9ANaZs9OY3ybsT2NHtbJ7UVthQEBXcfeL1kczfvQ6pcsu2331Fftd6Zvtkg10loKgSbz/Lvghlco/0t5mUosLzxb0lgkNI6P7MJlrURVWrXL01Dz6btv4SoLgrZTK2lSgzWTMjJyJM0ZzMC96IQM3LZxw42AKNmiyAtyAbcYiqSH4E5z/DmvW/IyeHoP0+hdOnxIK3UbojRX5k6BmIcGzbBM5SAqz/52QSfoNLwiT1R4rD14bicqtOZnO/kzViqDK1klSvufH6cxvXcGEisp2+Ukd/kR58ZiFOXeyCqJq/e+WNS4HWGbDX9Pw0EOJC3yr/UNGxwfJZgNU/bOIHGJQv4FzztlHf79BRFlV98+z3bS0ZPDepWKw1tml1ehjlEpvp1zupFp5R8NnpfJOSqW3U6n+P1pa0kHJB0W/l1DJrKl5EdppYVCT3cTo6OzDoHX4E302wp9zujm/fNdXNh3Q8jcWm1ygED07goDGCyQbHPCVu5YOfvnGhPzS/QKpSg7CoGVN2hkOvz0GsSO+GmPkToC9L/nY8YK+sZjC/BZEnHox0JesN128eMweFDpAT7Ds6a/+pKTR/2yfJSg0mHCAP2vNHjbfchGZltuxFpyb35YC72MWLAgZHr6dc9d+ZZJdUFIF9vVZnP8w1Sopqz9PNmuoVB7jvLXXzsg1b7/lKSqVy2v9ldpwUBZJfCrVXwz8y5TSaHUHeZFfsG3TPRQKqykW/SwRgGr+iKMVNJh/9uc8Hhs4WZUeM1TZ+fHhTPl17SZz8rBWYjOPogse9RmxtqTRSBDaS3WOlfSfHYkJ8uDO6nde3hH8pGDCV01mgyqqBcmYcV/94dLBZY8ASNWe1W5zLcNaabTdxGexdtRXd0bkB5L53f2CnAvMnVaoU7osuzq+sG/F3ve2SfbMUa3MiHvKoXZIdQf4C95zF5tu/S3aWv6RKKJGLLHzEvxaWwKKpUchvBhgQui4ry/p99226U1kMqdSqaQL1KpJAKxWNqMqbN2aYWwsbkqRZtWqx9m++QEKhbeklH2zFEuCMZ3cuekERJ6YRhrNJGpM3IA1q2eRDeoT7c/SfZx//uNT9ie+QI5eev0GeszioWuHB5dfdqH18V0LTPaEEa1GAuF8BL8AQ4iRca1evOyXV/8sgeR6X2B7Uj32dHqj/bLu5rwEnzmMDeqzYkxJuG2iJUTkfCM1ZKOBfEFRXzCBVL3bunLwC+NKn33hVNrzSXBN1IL26bpLq7gHA0wwkw3ywSEO8AMDAZ2d/8SWjSXyuevIZFoYL8YIdk4Ylsl+Vkx7e0i5/CgHRs/lgx/cjerBIFCXPjN8hFwOqtV0ATBxmwdjb0BE6euLjzCkbeQYGAgQUW7bcgtB8JaUQUnwPqa9Pcfo6AeA/zulNFqiFqO4yhbGTBFrCzUvPJnx8bAB6IT2pwH8C123UHZf/fOdHR9bpcoNS0zutH2+7DQxjzRzFPzinASBgI5qdEnHrqs3vnAX5AQG9cpN4xp95rCk05TV4VS3A+zs+HSLp9SZ0vzWROolQK4H2MFXXtT+nLM512dlV/dDezrWbVhi8385kw3yhz4ECcsyYM2F11Mpv5U4/g4L2wOCQFCNZ41wkVh5xhgjLFgQUqrcxWjpHXzwgz+viV37Cd3Rzs6Yvr5WPO9rQvqsZhBb+iVDo9+epAOZ/qjDlYaNKd3oD5VG8/qRCdLPVFCpqmHNB57E+3vJzQobdBL8Wd30QoY/D4fd+uiyK3dd8/i4Dp014qt/0yqhbZHQeNRNw0ScMVNaj/rFJhcYZXBc4zUdg1f9k9ITvFCrkTobdMmuZQ9WfPxfBQklGYPELLao0dPElQcArJTeUDDhS45NO/TQ6i+HNWNa3dmu2XsS6a4X2Z/MKRO7zy7dtezzQ770nTbJBDpDUnxHPgRJgLGcd+H3+eljb6NU+gwie2lvDwhDARyqbgYWXEXVJ4FPhLa2AGvHKBb/jG9+6xze+96nUTWHVGUJKURobzmblpbjqFbTKb+oenI5xchmurtLDAw0TyQRSbRJz17zY5z7T3I5SdlXmUijZcLXc8fWX69Vp1ORYUxidSvXYwzMfG7iyedAuY/z3/f4s6b5/dkwHWtODit3fX18weCVlxZ9vNap/ucik6sHQlU0rgVDbdb1W9HYo9omoW2TjClqfP2glN/UMXjVtgHeEQi9MS9onKzHCr2xEW6ZxAb1eQkwyN3L9v3daGKka1YXJNAUa5cvmBBBtsquOvz5IvtzLlmh/fQj9Hqx5tJIfTVAZoQVGkyjiu9q+z0R8Hk2bvxn4DKUS2hpeSkiUKlAFDGxyCuS6NBxpM3OwcpRa9WLYK0hmxHC0DBeKlIp/wtOPs/q1T9N3qvnyP2mPXtqKhT+NxBxCGltM5SoKqjcOOl9mz/q+pgiGwmC00HjdKikxuTzAaPD3cB3J2DfI9mgivFbGB8vYm0W5+OGpe2Pdg3GWuCGQ1RoZhburidSOv97DQg20MagGQS6jOz68uZruPS2D3dkLjIiHy9I+Ka8BEFFY8rqcIloq4ImDpDJBJHDG7YPyttITesSm5fQ5CUw5eS9dsTo55cMfnnrJLumRoKfTzJn8Tq/99wpiJkxxZFJMKiPPlP/DI8GDq23P4iiqxNNV0QPzRgPuxdHaGlqpA4w/clf+2dSBUpVcbV78mzYdEsMP6a+WK1VXi4F4ar+/Xz6pPMdgTz15e/vXrHuL5aZ/J/v86WqpiTE1CaYC45a0YDQ12e48MKngD9ly5bPI9VzUfceVN+KyMvJ5SySPG54D94l06z+fImAtYIxYI1gbPJ/qtVxqtXvE8e34Ojn7HMfA2r+ft3uCA26np6kGtx+y69gg24A8gXbsIS3V8hmLQeG9iCZ+wChq2tmJmIdBo25mTj+cwotWbTBR0WT1iWMAczvcO+9n+Ntbxs9KNDMQTZoX5/l7AufYvvme1i65DxGRsGamZkF1lrGxz1avXWW4M+AQsEixmLmeTsleSZg//6g8X6lmn4h10Yf28V1wHXDy9afOW6j98a41ai8qsWEOYPBozg8TpVExFhrkVewIEaEACO29sCMa+Qj9Y84jW5Xo99YsPPK++pO5rBBhUbFqKWtIBlrwJp5JIzGeGskg1LOzxwbVGXHrlUPntpxyiNLbctJkcbBiK+qMboDYO+Kj73GIqdX8YRYa2s5uh7mD5Zoo8khChk5Cew+V9xVDLN3J7O5f8bmgvNxmDMFCzqvY3IQfjLs8ePBNLE6YyVj8xLboEHgzaE2Ixmg0pr+6u5OWKGDez63v2P5hUtsyxllrZLmvhkMY1ptC55xKaw3ZCdO7yO19Kefe29uo5p/HeXS6SivQ+QVqB6H6iIgB+QRAe9LqC8SM4QxT2D4MWq+gwbf4ZzVP2Wyse1DD+kzElF8JkMu88eMjqaTPhM8BovYn3DuueNHBJZmYVCANWt+xLaNl5HJLCR2PpXkU6mU7G+W9xWAqe1turqS9VNtD6Xy3VTKDp0BMXBVJZczqNvJee/75UTAnYmjnmxI/FOK439EJdLmJLFmaiVy4OSxQ66xQTr+DnpsJ73xgj1X3gfcp/CZ0RW/9+pY9Q1O4tPU66uc6AkCSxRaBTJARtWXYqFiVIZidFDVPyJGvpvV4D8Kbf578uiXKjU4VGpN+Q5604zr/xrXyvKS994wn/dcfUjZetVv00RVcOixQTq5O95nTv1kRaPXl30M6O4lT1/9S4AMmT2hsavHXMUZYzJVJ3mLT+o6TMEbH1ix3qsPDFqYWG5EsqKSV2N+/LInv1iaOYeEJIga1R+XtPzZ8Xkfk3oABOPtLw5zE/GJH7e5N/Llz5Z97GiQ8OURNaZiFPNYWqeSRJs3YYXuMZ+4JNLovUUfNXwtk94w+v8Beg/Arwzn1YoAAAAASUVORK5CYII=">
+    <ul class="nav" id="nav"></ul>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="modal"></div>
+<div id="fx"></div>
+<div class="pswitch" id="pswitch"></div>
+<script>
+// =====================================================================
+// data — made-up people, nothing saved
+// =====================================================================
+const TODAY = '2026-11-25';
+const VARIANTS = { A: 'Board & drawer', B: 'Register & page', C: 'Pipeline & dossier' };
+const SEATS = {
+  vol:    { id: 'naledi', short: 'Volunteer',     role: 'Volunteer · UCT', note: 'Naledi, a Volunteer outside Research: the front page is hers, the door is shut.' },
+  lead:   { id: 'aisha',  short: 'Study lead',    role: 'Volunteer · UJ · Research', note: 'Aisha, a Research member: leads two Studies, sits on no other team.' },
+  member: { id: 'pieter', short: 'Member',        role: 'Volunteer · Stellenbosch · Research', note: 'Pieter, a Research member: leads one Study, reads the rest, may ask onto a team.' },
+  head:   { id: 'ruth',   short: 'Head',          role: 'Head of Research', note: 'Ruth, Head of Research: owns the columns, names a new lead, backstop over every Study.' },
+  exco:   { id: 'sipho',  short: 'Exco',          role: 'CEO · National Exco', note: 'Sipho, National Exco: reads everything, backstop with the Head.' },
+};
+const PEOPLE = {
+  naledi: 'Naledi Mokoena', aisha: 'Aisha Patel', pieter: 'Pieter de Klerk', ruth: 'Ruth Mensah', sipho: 'Sipho Ndlovu',
+  kea: 'Kea Mthembu', thabo: 'Thabo Nkosi', musa: 'Musa Zulu',
+};
+const KINDS = { literature: 'Literature review', audit: 'Audit', survey: 'Survey', interview: 'Interview study', lab: 'Lab work', other: 'Something else' };
+const ETH = { none: 'Ethics not needed', pending: 'Ethics pending', approved: 'Ethics approved' };
+
+function seed() {
+  return {
+    seq: 100,
+    members: { ruth: 'head', aisha: 'active', pieter: 'active', kea: 'active' },   // thabo left Research on 12 Nov
+    requests: [], declined: {},
+    cols: [
+      { id: 'k1', name: 'Proposed' }, { id: 'k2', name: 'Designing' }, { id: 'k3', name: 'Collecting' },
+      { id: 'k4', name: 'Analysing' }, { id: 'k5', name: 'Writing up' }, { id: 'k6', name: 'Published' }, { id: 'k7', name: 'Abandoned' },
+    ],
+    events: [{ name: 'Research methods evening: writing a survey that gets answered', on: '2026-12-04', where: 'Online', cap: null, signed: 9 }],
+    studies: [
+      { id: 's1', title: 'Why students are deferred as blood donors', kind: 'survey', col: 'k3', lead: 'aisha', team: ['aisha', 'kea'],
+        question: 'Among students turned away at campus blood drives, what were the reasons for deferral, and how many would return?',
+        pico: { P: 'Students deferred at Save7 campus drives, 2025–26', I: '—', C: 'Students who donated at the same drives', O: 'Deferral reason; stated intent to return' },
+        method: 'Anonymous online survey, sent by SANBS to deferred donors who agreed to be contacted. Target 300 responses. Descriptive statistics; free-text reasons coded by two people.',
+        ethics: { st: 'approved', ref: 'UJ REC 2026-114', letter: 'd2' }, project: 'UJ Blood Drive 2026', blocked: '',
+        log: [
+          { on: '2026-11-21', by: 'kea', text: '183 responses so far. Iron deficiency is the top reason by a distance — 41%.' },
+          { on: '2026-11-04', by: 'aisha', text: 'Survey live. SANBS sent the first email to 1,120 deferred donors.' },
+          { on: '2026-10-22', by: 'aisha', text: 'Ethics approved with one change: no student numbers collected.' },
+        ],
+        docs: [{ id: 'd1', name: 'Protocol v3.pdf', by: 'aisha', on: '2026-10-02' }, { id: 'd2', name: 'Ethics approval letter.pdf', by: 'aisha', on: '2026-10-22', eth: true },
+               { id: 'd3', name: 'Responses export 21 Nov.xlsx', by: 'kea', on: '2026-11-21', pd: true }],
+        jreq: [], jinv: [] },
+      { id: 's2', title: 'Stem-cell registry awareness: what the literature says', kind: 'literature', col: 'k4', lead: 'pieter', team: ['pieter'],
+        question: 'What interventions have raised stem-cell registry sign-ups among young adults, and how large were the effects?',
+        pico: null, method: 'Scoping review. PubMed and Scopus, 2010–2026, English. Screened by title and abstract, then full text.',
+        ethics: { st: 'none', ref: '', letter: null }, project: null, blocked: '',
+        log: [{ on: '2026-11-18', by: 'pieter', text: '24 papers through full-text screening. Peer-led campus drives come up again and again.' },
+              { on: '2026-10-30', by: 'pieter', text: '612 hits after de-duplication.' }],
+        docs: [{ id: 'd4', name: 'Search strategy.docx', by: 'pieter', on: '2026-10-29' }], jreq: [], jinv: [] },
+      { id: 's3', title: 'Bone-marrow drive conversion audit', kind: 'audit', col: 'k2', lead: 'aisha', team: ['aisha'],
+        question: 'Of the students who signed up at last year\'s bone-marrow drives, how many completed a swab?',
+        pico: null, method: 'Compare drive sign-up sheets with the registry\'s swab records, branch by branch.',
+        ethics: { st: 'pending', ref: 'Submitted to UJ REC 14 Nov', letter: null }, project: null,
+        blocked: 'Waiting on UJ Campus Health for last year\'s sign-up sheets.',
+        log: [{ on: '2026-11-14', by: 'aisha', text: 'Ethics application in. Campus Health say the sheets are in storage.' }],
+        docs: [{ id: 'd5', name: 'Ethics application.pdf', by: 'aisha', on: '2026-11-14' }], jreq: [{ who: 'pieter', on: '2026-11-24' }], jinv: [] },
+      { id: 's4', title: 'Why registrants drop out before the swab', kind: 'interview', col: 'k1', lead: 'thabo', team: ['thabo', 'kea'],
+        question: 'Why do students who sign up for the registry not complete the swab?',
+        pico: null, method: 'Semi-structured interviews, 12–15 students across three campuses.',
+        ethics: { st: 'pending', ref: '', letter: null }, project: null, blocked: '',
+        log: [{ on: '2026-10-09', by: 'thabo', text: 'Drafted the interview guide. Need a second campus.' }],
+        docs: [{ id: 'd6', name: 'Interview guide draft.docx', by: 'thabo', on: '2026-10-09' }], jreq: [], jinv: [] },
+      { id: 's5', title: 'Where students can get PrEP: a campus map', kind: 'survey', col: 'k6', lead: 'kea', team: ['kea', 'pieter'],
+        question: 'Where on or near each campus can a student get PrEP, and on what days?',
+        pico: null, method: 'Phoned and visited every clinic within 3 km of eight campuses.',
+        ethics: { st: 'none', ref: '', letter: null }, project: null, blocked: '',
+        log: [{ on: '2026-09-30', by: 'kea', text: 'Published on the website with Media. 31 clinics mapped.' }],
+        docs: [{ id: 'd7', name: 'PrEP map — final.pdf', by: 'kea', on: '2026-09-30' }], jreq: [], jinv: [] },
+      { id: 's6', title: 'Volunteer wellbeing after hospital visits', kind: 'other', col: 'k7', lead: 'pieter', team: ['pieter'],
+        question: 'How do volunteers feel in the week after a ward visit?', pico: null, method: 'Short diary study.',
+        ethics: { st: 'pending', ref: '', letter: null }, project: null, blocked: '',
+        log: [{ on: '2026-08-12', by: 'pieter', text: 'Stopping: Operations are changing how visits run, so we\'d be studying something that is about to end.' }],
+        docs: [], jreq: [], jinv: [] },
+    ],
+  };
+}
+
+// =====================================================================
+// state, helpers
+// =====================================================================
+let DB = seed();
+const params = new URLSearchParams(location.search);
+let UI = {
+  variant: VARIANTS[params.get('variant')] ? params.get('variant') : 'A',
+  seat: SEATS[params.get('seat')] ? params.get('seat') : 'lead',
+  inside: params.get('inside') === '1', room: 'studies', justEntered: false,
+  study: null, edit: null, opening: false, cols: false, filter: 'all', ctab: 'overview', draft: false, anim: false,
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nm = id => PEOPLE[id] || id;
+const initials = id => nm(id).split(' ').map(w => w[0]).slice(0, 2).join('');
+const av = (id, cls = '') => `<span class="av sm ${cls} ${DB.members[id] || id === 'sipho' ? '' : 'gone'}" title="${esc(nm(id))}">${esc(initials(id))}</span>`;
+const fmt = iso => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
+const me = () => SEATS[UI.seat].id;
+const S = id => DB.studies.find(s => s.id === id);
+const col = id => DB.cols.find(c => c.id === id);
+const val = id => (document.getElementById(id) || {}).value || '';
+let toastT;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 5200); }
+
+// ---- the model's permissions (CONTEXT.md: Study), not the design ----
+const isExco = () => UI.seat === 'exco';
+const isHead = () => DB.members[me()] === 'head';
+const isBack = () => isHead() || isExco();                                  // backstop over every Study
+const isMember = (p = me()) => ['head', 'active'].includes(DB.members[p]);
+const canEnter = () => isMember() || isExco();
+const canOpen = () => isMember();                                           // any member of Research opens a Study
+const onTeam = s => s.team.includes(me());
+const canWrite = s => onTeam(s) || isBack();                               // the team writes; Head + Exco as backstop
+const leadGone = s => !DB.members[s.lead];
+const canGate = s => s.lead === me() && !leadGone(s);                       // the lead is the only gate onto the team
+const canDelDoc = (s, d) => d.by === me() || isBack();
+const isEnd = s => DB.cols.findIndex(c => c.id === s.col) >= DB.cols.length - 2;
+function standing() {
+  if (isExco()) return 'reads';
+  const m = DB.members[me()]; if (m) return m;
+  if (DB.requests.some(r => r.who === me())) return 'pending';
+  return 'none';
+}
+
+// =====================================================================
+// shared Study pieces — content only; each take lays them out its own way
+// =====================================================================
+const ethChip = s => `<span class="eth ${s.ethics.st}">${ETH[s.ethics.st]}</span>`;
+const kindTxt = s => KINDS[s.kind] || s.kind;
+const lastLog = s => s.log[0];
+function leadLine(s) {
+  return leadGone(s) ? `<span class="row" style="gap:6px">${av(s.lead)}<span class="sm"><s>${esc(nm(s.lead))}</s></span><span class="gone-tag">left Research</span></span>`
+    : `<span class="row" style="gap:6px">${av(s.lead, 'p')}<span class="sm"><b class="strong">${esc(nm(s.lead))}</b> leads</span></span>`;
+}
+function whoNote(s) {
+  if (onTeam(s)) return s.lead === me() ? 'You lead this Study.' : 'You\'re on this Study\'s team.';
+  if (isHead()) return 'You head Research: backstop over this Study.';
+  if (isExco()) return 'National Exco: you read it, and are backstop with the Head.';
+  return 'You\'re in Research, not on this team: you read it.';
+}
+
+function secQuestion(s) {
+  if (UI.edit === s.id) return `<div class="sec ed"><h4>Question</h4>
+    <label class="f">Title<input type="text" id="e-title" value="${esc(s.title)}"></label>
+    <label class="f">The question<textarea id="e-q">${esc(s.question)}</textarea></label>
+    <div class="grid2" style="gap:8px">${['P', 'I', 'C', 'O'].map(k => `<label class="f">${{ P: 'Population', I: 'Intervention', C: 'Comparison', O: 'Outcome' }[k]}<input type="text" id="e-${k}" value="${esc(s.pico ? s.pico[k] : '')}" placeholder="PICO — leave blank if it doesn't fit"></label>`).join('')}</div>
+    <label class="f">Kind<select id="e-kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${s.kind === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label></div>`;
+  return `<div class="sec"><h4>Question<span class="grow"></span>${canWrite(s) ? `<button class="link" data-act="edit" data-id="${s.id}">Edit</button>` : ''}</h4>
+    <p class="q">${esc(s.question)}</p>
+    ${s.pico ? `<div class="pico">${['P', 'I', 'C', 'O'].map(k => `<b>${{ P: 'Population', I: 'Intervention', C: 'Comparison', O: 'Outcome' }[k]}</b><span>${esc(s.pico[k])}</span>`).join('')}</div>` : ''}</div>`;
+}
+function secMethod(s) {
+  if (UI.edit === s.id) return `<div class="sec ed"><h4>Methodology</h4><textarea id="e-method" style="min-height:90px">${esc(s.method)}</textarea>
+    <div class="row"><button class="btn primary sm" data-act="save" data-id="${s.id}">Save</button><button class="btn sm" data-act="cancelEdit">Cancel</button></div></div>`;
+  return `<div class="sec"><h4>Methodology</h4><p class="prose">${s.method ? esc(s.method) : '<span class="note">Not written yet.</span>'}</p></div>`;
+}
+function secEthics(s) {
+  const letter = s.docs.find(d => d.id === s.ethics.letter);
+  return `<div class="sec"><h4>Ethics</h4>
+    <div class="row">${ethChip(s)}${s.ethics.ref ? `<span class="sm">${esc(s.ethics.ref)}</span>` : ''}</div>
+    ${letter ? `<div class="sm" style="margin-top:6px">Letter: <a class="link" href="#" data-act="doc">${esc(letter.name)}</a></div>` : ''}
+    ${canWrite(s) ? `<div class="row" style="margin-top:8px">${Object.keys(ETH).filter(k => k !== s.ethics.st).map(k => `<button class="btn sm" data-act="eth" data-id="${s.id}" data-v="${k}">${k === 'approved' ? 'Approved — attach the letter…' : k === 'pending' ? 'Mark pending' : 'Not needed'}</button>`).join('')}</div>` : ''}
+    <p class="note" style="margin:8px 0 0">Recorded, never enforced: no column refuses a Study on its ethics.</p></div>`;
+}
+function secLog(s) {
+  return `<div class="sec"><h4>Log · what was found</h4>
+    ${canWrite(s) ? `<div class="stack" style="gap:6px;margin-bottom:12px"><textarea id="log-${s.id}" placeholder="What happened, what you found"></textarea><div><button class="btn primary sm" data-act="log" data-id="${s.id}">Add to the log</button></div></div>` : ''}
+    ${s.log.length ? `<div class="log">${s.log.map(e => `<div class="e"><div class="m">${fmt(e.on)} · ${esc(nm(e.by))}</div>${esc(e.text)}</div>`).join('')}</div>` : '<div class="empty">Nothing logged yet.</div>'}</div>`;
+}
+function secDocs(s) {
+  return `<div class="sec"><h4>Documents<span class="grow"></span>${canWrite(s) ? `<button class="link" data-act="addDoc" data-id="${s.id}">+ Add</button>` : ''}</h4>
+    ${s.docs.length ? `<div class="docs">${s.docs.map(d => `<div class="doc ${d.pd ? 'pd' : ''}"><span class="ic">${esc(d.name.split('.').pop().toUpperCase())}</span><span><b>${esc(d.name)}</b><span class="xs note">${esc(nm(d.by))} · ${fmt(d.on)}${d.eth ? ' · ethics letter' : ''}${d.pd ? ' · may hold participants\' data' : ''}</span></span>${canDelDoc(s, d) ? `<button class="link" data-act="delDoc" data-id="${s.id}" data-doc="${d.id}">Remove</button>` : ''}</div>`).join('')}</div>` : '<div class="empty">No documents.</div>'}
+    <p class="note" style="margin:6px 0 0">A new version is a new upload. Removed by whoever added it, or the Head.</p></div>`;
+}
+function secTeam(s) {
+  const mine = s.jreq.find(r => r.who === me()), inv = s.jinv.find(r => r.who === me());
+  const outsiders = Object.keys(DB.members).filter(p => !s.team.includes(p) && !s.jinv.some(r => r.who === p) && !s.jreq.some(r => r.who === p));
+  let ctl = '';
+  if (canGate(s)) {
+    ctl = `${s.jreq.map(r => `<div class="li pink row"><span class="sm grow"><b class="strong">${esc(nm(r.who))}</b> asks to join · ${fmt(r.on)}</span><button class="btn ok sm" data-act="jyes" data-id="${s.id}" data-who="${r.who}">Approve</button><button class="btn sm" data-act="jno" data-id="${s.id}" data-who="${r.who}">Decline</button></div>`).join('')}
+      ${s.jinv.map(r => `<div class="li row"><span class="sm grow">Invited <b class="strong">${esc(nm(r.who))}</b> · waits on them</span><button class="link" data-act="jwd" data-id="${s.id}" data-who="${r.who}">Withdraw</button></div>`).join('')}
+      ${outsiders.length ? `<div class="row"><select id="inv-${s.id}"><option value="">Invite someone from Research…</option>${outsiders.map(p => `<option value="${p}">${esc(nm(p))}</option>`).join('')}</select><button class="btn sm" data-act="jinv" data-id="${s.id}">Invite</button></div>` : ''}`;
+  } else if (inv) {
+    ctl = `<div class="li pink row"><span class="sm grow">${esc(nm(s.lead))} invited you onto this Study.</span><button class="btn ok sm" data-act="jacc" data-id="${s.id}">Accept</button><button class="btn sm" data-act="jdec" data-id="${s.id}">Decline</button></div>`;
+  } else if (onTeam(s) && s.lead !== me()) {
+    ctl = `<button class="link" data-act="jleave" data-id="${s.id}">Leave this team</button>`;
+  } else if (isMember() && !onTeam(s)) {
+    ctl = mine ? `<div class="row"><span class="chip amber">Request pending</span><button class="link" data-act="jwdme" data-id="${s.id}">Withdraw</button></div>`
+      : leadGone(s) ? '<span class="note">No lead to ask until the Head names one.</span>' : `<button class="btn sm" data-act="jask" data-id="${s.id}">Ask to join the team</button>`;
+  }
+  const newLead = isBack() && s.team.filter(p => DB.members[p] && p !== s.lead).length
+    ? `<div class="row" style="margin-top:8px"><select id="nl-${s.id}"><option value="">${leadGone(s) ? 'Name a new lead…' : 'Change the lead…'}</option>${s.team.filter(p => DB.members[p] && p !== s.lead).map(p => `<option value="${p}">${esc(nm(p))}</option>`).join('')}</select><button class="btn sm" data-act="newLead" data-id="${s.id}">Name</button></div>`
+    : isBack() && leadGone(s) ? '<p class="note">Nobody left on the team to lead it. Add someone first, or let it stand.</p>' : '';
+  return `<div class="sec"><h4>Team</h4><div class="team">${s.team.map(p => `<div class="tm">${av(p, p === s.lead ? 'p' : '')}<b>${esc(nm(p))}</b>${p === s.lead ? '<span class="lead-tag">Lead</span>' : ''}${!DB.members[p] ? '<span class="gone-tag">left Research</span>' : ''}</div>`).join('')}</div>
+    ${leadGone(s) ? `<p class="note" style="margin:8px 0 0">The lead left Research. The Study stands and the team still writes it; the Head names a new lead. Nothing goes red.</p>` : ''}
+    <div class="stack" style="gap:6px;margin-top:10px">${ctl}</div>${newLead}</div>`;
+}
+function secDetails(s) {
+  return `<div class="sec"><h4>Details</h4><dl class="fields">
+    <dt>Kind</dt><dd>${esc(kindTxt(s))}</dd><dt>Stage</dt><dd>${esc(col(s.col).name)}</dd>
+    ${s.project ? `<dt>Project</dt><dd>${esc(s.project)}</dd>` : ''}
+    </dl>${blockedCtl(s)}</div>`;
+}
+function blockedCtl(s) {
+  if (s.blocked) return `<div class="row" style="margin-top:8px"><span class="blk">⏸ ${esc(s.blocked)}</span>${canWrite(s) ? `<button class="link" data-act="unblock" data-id="${s.id}">Clear</button>` : ''}</div>`;
+  return canWrite(s) && !isEnd(s) ? `<button class="link" style="margin-top:8px" data-act="block" data-id="${s.id}">Flag as blocked…</button>` : '';
+}
+function moveCtl(s) {
+  if (!canWrite(s)) return '';
+  return `<label class="f" style="max-width:240px">Stage — its column<select data-act-change="move" data-id="${s.id}">${DB.cols.map(c => `<option value="${c.id}" ${c.id === s.col ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`;
+}
+function adminCtl(s) {
+  return isBack() ? `<div class="sec"><h4>Backstop</h4><button class="btn red sm" data-act="del" data-id="${s.id}">Delete — entered by mistake</button><p class="note" style="margin:6px 0 0">Only the Head or National Exco. The team never deletes a Study; it ends in the last column.</p></div>` : '';
+}
+const backstopNote = s => !onTeam(s) && isBack() ? '<span class="backstop">Writing here as backstop, not as the team.</span>' : '';
+
+// =====================================================================
+// take A — Board & drawer
+// =====================================================================
+function cardA(s) {
+  const l = lastLog(s);
+  return `<div class="kcard RA-card ${onTeam(s) ? 'mine' : ''}" data-act="openStudy" data-id="${s.id}" tabindex="0">
+    <div class="meta"><span class="kind">${esc(kindTxt(s))}</span><span class="grow"></span>${s.jreq.length && canGate(s) ? `<span class="num pink" style="padding:1px 7px" title="Asking to join">${s.jreq.length}</span>` : ''}</div>
+    <div class="t">${esc(s.title)}</div>
+    <div class="meta"><span class="avs">${s.team.map(p => av(p, p === s.lead ? 'p' : '')).join('')}</span>${leadGone(s) ? '<span class="gone-tag">no lead</span>' : ''}<span class="grow"></span>${ethChip(s)}</div>
+    ${s.blocked ? `<span class="blk">⏸ ${esc(s.blocked.slice(0, 60))}${s.blocked.length > 60 ? '…' : ''}</span>` : ''}
+    ${l ? `<div class="last">${fmt(l.on)} · ${esc(l.text.slice(0, 70))}${l.text.length > 70 ? '…' : ''}</div>` : ''}
+  </div>`;
+}
+function roomA() {
+  return `<div class="RA-head"><div class="grow"><h2 class="title" style="margin:0;font-size:24px">Research board</h2><p class="seatnote" style="margin:4px 0 0">Every Study Research is carrying out. Your teams' cards are edged pink. Open one to read it${canOpen() ? ' — or open a Study of your own' : ''}.</p></div>
+    ${isBack() ? '<button class="btn sm" data-act="cols">Columns…</button>' : ''}${canOpen() ? '<button class="btn primary" data-act="newA">+ Open a Study</button>' : ''}</div>
+    <div class="RA-board">${DB.cols.map((c, i) => { const xs = DB.studies.filter(s => s.col === c.id); return `<div class="col ${i >= DB.cols.length - 2 ? 'end' : ''}"><h4>${esc(c.name)}<span>${xs.length}</span></h4>${xs.map(cardA).join('') || '<div class="note" style="padding:4px">Nothing here.</div>'}</div>`; }).join('')}</div>
+    <div class="flag"><b>Open question.</b> Should the ethics status sit on the card? It's the field people most want at a glance, but next to a Study in <i>Collecting</i>, “Ethics pending” reads like a warning — and ethics is recorded, never enforced.</div>`;
+}
+function drawerA() {
+  const s = S(UI.study); if (!s) return '';
+  return `<div class="scrim" data-act="closeStudy"><div class="drawer ${UI.anim ? 'anim' : ''}" data-stop="1">
+    <div class="row"><span class="kind">${esc(kindTxt(s))} · ${esc(col(s.col).name)}</span><span class="grow"></span><button class="btn quiet sm" data-act="closeStudy">Close ✕</button></div>
+    <h2 class="title" style="font-size:24px;margin:6px 0 8px">${esc(s.title)}</h2>
+    <div class="row" style="margin-bottom:6px">${leadLine(s)}${ethChip(s)}</div>
+    <p class="note" style="margin:0 0 14px">${whoNote(s)} ${backstopNote(s)}</p>
+    <div class="row" style="margin-bottom:16px;align-items:flex-end">${moveCtl(s)}<span class="grow"></span></div>${blockedCtl(s)}<hr class="hr">
+    ${secQuestion(s)}${secMethod(s)}${secEthics(s)}${secLog(s)}${secDocs(s)}${secTeam(s)}${s.project ? `<div class="sec"><h4>Points at a Project</h4><span class="sm">${esc(s.project)}</span></div>` : ''}${adminCtl(s)}
+  </div></div>`;
+}
+function modalA() {
+  return `<div class="modalc" data-act="closeModal"><div class="box" data-stop="1">
+    <p class="eyebrow">Research board</p><h2 class="title" style="font-size:22px;margin:4px 0 12px">Open a Study</h2>
+    <div class="stack" style="gap:10px"><label class="f">What do you call it?<input type="text" id="n-title" placeholder="e.g. Why registrants drop out before the swab"></label>
+    <label class="f">The question<textarea id="n-q" placeholder="What are you trying to find out?"></textarea></label>
+    <label class="f">Kind<select id="n-kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
+    <p class="note" style="margin:0">It lands in <b>${esc(DB.cols[0].name)}</b> with you as lead. Methodology, ethics and documents are filled in on the Study.</p>
+    <div class="row"><button class="btn primary" data-act="createA">Open it</button><button class="btn" data-act="closeModal">Cancel</button></div></div></div></div>`;
+}
+
+// =====================================================================
+// take B — Register & page
+// =====================================================================
+function roomB() {
+  if (UI.opening) return formB();
+  if (UI.study) return pageB(S(UI.study));
+  const groups = DB.cols.map(c => [c, DB.studies.filter(s => s.col === c.id)]);
+  return `<div class="row" style="margin-bottom:12px;align-items:flex-end"><div class="grow"><h2 class="title" style="margin:0;font-size:24px">Studies</h2><p class="seatnote" style="margin:4px 0 0">${DB.studies.length} Studies, listed by the stage they're at.</p></div>
+      ${isBack() ? '<button class="btn sm" data-act="cols">Columns…</button>' : ''}${canOpen() ? '<button class="btn primary" data-act="newB">+ Open a Study</button>' : ''}</div>
+    <div class="RB-strip">${groups.map(([c, xs]) => `<div><b>${xs.length}</b>${esc(c.name)}</div>`).join('')}</div>
+    ${groups.filter(([, xs]) => xs.length).map(([c, xs]) => `<div class="RB-grp"><h3>${esc(c.name)} <span>${xs.length}</span></h3><table class="RB-t"><thead><tr><th>Study</th><th>Kind</th><th>Lead</th><th>Ethics</th><th>Last logged</th></tr></thead><tbody>
+      ${xs.map(s => `<tr class="r" data-act="openStudy" data-id="${s.id}"><td><span class="t">${esc(s.title)}</span>${onTeam(s) ? ' <span class="chip pink">your team</span>' : ''}${s.blocked ? ' <span class="blk">⏸ blocked</span>' : ''}</td><td>${esc(kindTxt(s))}</td><td>${leadGone(s) ? '<span class="gone-tag">left Research</span>' : esc(nm(s.lead))}</td><td>${ethChip(s)}</td><td class="note">${lastLog(s) ? fmt(lastLog(s).on) : '—'}</td></tr>`).join('')}
+    </tbody></table></div>`).join('')}
+    <div class="flag"><b>Open question.</b> This take shows the Board as a register, not columns of cards. A Board is “a named set of columns holding cards, moved by hand” — is a list grouped by column still that Board, or does Research need the card view too?</div>`;
+}
+function pageB(s) {
+  const i = DB.cols.findIndex(c => c.id === s.col);
+  return `<div class="RB-page"><button class="link" data-act="closeStudy">← All Studies</button>
+    <div class="band" style="margin-top:10px"><div class="circles" aria-hidden="true" style="position:absolute;right:18px;top:14px;transform:scale(.6);transform-origin:top right"></div>
+      <span class="kind">${esc(kindTxt(s))}</span><h1 class="title">${esc(s.title)}<span class="dot">.</span></h1>
+      <div class="row">${leadLine(s)}${ethChip(s)}${s.project ? `<span class="chip">Project · ${esc(s.project)}</span>` : ''}</div>
+      <div class="RB-steps">${DB.cols.map((c, j) => `<button class="${j < i ? 'past' : j === i ? 'now' : ''}" ${canWrite(s) ? `data-act="moveTo" data-id="${s.id}" data-col="${c.id}"` : 'disabled'}>${esc(c.name)}</button>`).join('')}</div>
+      <p class="note" style="margin:10px 0 0">${whoNote(s)} ${canWrite(s) ? 'Click a stage to move it there.' : ''} ${backstopNote(s)}</p>${blockedCtl(s)}</div>
+    <div class="RB-cols"><div>${secQuestion(s)}${secMethod(s)}${secLog(s)}</div>
+      <div class="RB-rail"><div class="card">${secEthics(s)}</div><div class="card pink">${secTeam(s)}</div><div class="card">${secDocs(s)}</div>${adminCtl(s) ? `<div class="card">${adminCtl(s)}</div>` : ''}</div></div></div>`;
+}
+function formB() {
+  return `<div class="RB-form"><button class="link" data-act="cancelNew">← All Studies</button>
+    <h2 class="title" style="font-size:26px;margin:10px 0 4px">Open a Study</h2><p class="seatnote">You'll be its lead, and it starts in <b>${esc(DB.cols[0].name)}</b>. Only the title and the question are needed now.</p>
+    <div class="card"><p class="card-label">1 · What you want to find out</p><div class="stack" style="gap:10px">
+      <label class="f">Title<input type="text" id="n-title" placeholder="A handle — e.g. Bone-marrow drive conversion audit"></label>
+      <label class="f">The question<textarea id="n-q" placeholder="The thing that has to survive you leaving"></textarea></label>
+      <label class="checks"><label><input type="checkbox" id="n-pico" data-act-change="pico"> Write it as PICO</label></label>
+      <div id="pico-f" style="display:none" class="grid2">${['P', 'I', 'C', 'O'].map(k => `<label class="f">${{ P: 'Population', I: 'Intervention', C: 'Comparison', O: 'Outcome' }[k]}<input type="text" id="n-${k}"></label>`).join('')}</div>
+      <label class="f">Kind<select id="n-kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label></div></div>
+    <div class="card pink"><p class="card-label">2 · How</p><label class="f">Methodology<textarea id="n-method" placeholder="Optional now — fill it in as it firms up"></textarea></label></div>
+    <div class="card"><p class="card-label">3 · Ethics</p><div class="checks">${Object.entries(ETH).map(([k, v], j) => `<label><input type="radio" name="n-eth" value="${k}" ${j === 0 ? 'checked' : ''}> ${v.replace('Ethics ', '')}</label>`).join('')}</div>
+      <p class="note" style="margin:8px 0 0">Recorded, never enforced. Attach the letter on the Study once it's approved.</p></div>
+    <div class="row"><button class="btn primary" data-act="createB">Open the Study</button><button class="btn" data-act="cancelNew">Cancel</button></div></div>`;
+}
+
+// =====================================================================
+// take C — Pipeline & dossier
+// =====================================================================
+function roomC() {
+  const xs = DB.studies.filter(s => UI.filter === 'all' || (UI.filter === 'mine' ? onTeam(s) : s.col === UI.filter));
+  if (!UI.study || !xs.some(s => s.id === UI.study)) UI.study = xs[0] ? xs[0].id : null;
+  const s = UI.study ? S(UI.study) : null;
+  const pill = (k, label, n) => `<button class="${UI.filter === k ? 'on' : ''}" data-act="filter" data-f="${k}">${label} <span class="n">${n}</span></button>`;
+  return `<div class="row" style="margin-bottom:12px;align-items:flex-end"><h2 class="title grow" style="margin:0;font-size:24px">Studies</h2>${isBack() ? '<button class="btn sm" data-act="cols">Columns…</button>' : ''}</div>
+    <div class="RC-pipe">${pill('all', 'All', DB.studies.length)}${isMember() ? pill('mine', 'My teams', DB.studies.filter(onTeam).length) : ''}<span class="arrow">|</span>
+      ${DB.cols.map((c, i) => pill(c.id, esc(c.name), DB.studies.filter(x => x.col === c.id).length) + (i < DB.cols.length - 3 ? '<span class="arrow">→</span>' : '')).join('')}</div>
+    <div class="RC"><div><div class="RC-list">
+      ${canOpen() ? (UI.draft ? `<div class="RC-draft"><input type="text" id="n-title" placeholder="Title of your Study"><select id="n-kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select><div class="row"><button class="btn primary sm" data-act="createC">Open it</button><button class="btn sm" data-act="cancelNew">Cancel</button></div><span class="note xs">Then write its question in the dossier →</span></div>` : '<button class="btn primary" data-act="newC" style="justify-self:start">+ Open a Study</button>') : ''}
+      ${xs.map(x => `<div class="RC-item ${x.id === UI.study ? 'on' : ''}" data-act="pick" data-id="${x.id}"><span class="t">${esc(x.title)}</span><span class="s"><span class="kind">${esc(col(x.col).name)}</span>· ${esc(kindTxt(x))} · ${leadGone(x) ? 'no lead' : esc(nm(x.lead))}${x.blocked ? ' · ⏸' : ''}${onTeam(x) ? ' <span class="chip pink">your team</span>' : ''}</span></div>`).join('') || '<div class="empty">Nothing at this stage.</div>'}
+    </div></div>${s ? dossierC(s) : '<div class="empty">Pick a Study.</div>'}</div>`;
+}
+function dossierC(s) {
+  const tabs = { overview: 'Overview', log: `Log · ${s.log.length}`, docs: `Documents · ${s.docs.length}`, team: `Team · ${s.team.length}` };
+  const body = UI.ctab === 'log' ? secLog(s) : UI.ctab === 'docs' ? secDocs(s) : UI.ctab === 'team' ? secTeam(s) + adminCtl(s)
+    : secQuestion(s) + secMethod(s) + secEthics(s) + secDetails(s);
+  return `<div class="RC-dos"><div class="top"><span class="kind">${esc(kindTxt(s))}</span><h2>${esc(s.title)}</h2>
+    <div class="row">${leadLine(s)}${ethChip(s)}<span class="grow"></span>${moveCtl(s).replace('max-width:240px', 'max-width:200px')}</div>
+    <p class="note" style="margin:8px 0 0">${whoNote(s)} ${backstopNote(s)}</p>
+    <div class="RC-tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${UI.ctab === k}" data-act="ctab" data-t="${k}">${v}</button>`).join('')}</div></div>
+    <div class="body">${body}</div></div>`;
+}
+
+// =====================================================================
+// Research's hub: front page, door, inside (as #60 take A)
+// =====================================================================
+function front() {
+  const enter = canEnter();
+  const st = standing();
+  const join = st === 'pending' ? `<div class="join"><span class="chip amber">Request pending</span><span class="why">It waits on ${esc(nm('ruth'))}'s Dashboard.</span><button class="link" data-act="withdrawJoin">Withdraw</button></div>`
+    : `<div class="join"><button class="btn primary" data-act="askJoin">Ask to join Research</button><span class="why">${esc(nm('ruth'))}, its Head, answers.</span></div>`;
+  const door = enter
+    ? `<div class="A-door"><div><p class="eyebrow" style="color:var(--amber)">Behind this page</p><h3>Research's own work</h3></div>
+       <div class="rooms"><span>Studies</span><span>Department tracker</span><span class="${isBack() ? '' : 'x'}">Reports</span></div>
+       <button class="A-enter" data-act="enter">Enter Research <span class="arr">→</span></button></div>`
+    : `<div class="A-door shut"><div><p class="eyebrow">Behind this page</p><h3>Research's Studies are for its members.</h3><p class="sm" style="margin:6px 0 0">Datasets and ethics files may carry participants' data, so they're read only inside.</p></div>${join}</div>`;
+  const ev = DB.events[0];
+  return `<div class="A-hero"><div class="A-front"><div class="circles" aria-hidden="true"></div><p class="eyebrow">Departments</p><h1 class="title">Research<span class="dot">.</span></h1>
+      <div class="row" style="margin:8px 0"><span class="kv">Head <b>${esc(nm('ruth'))}</b></span><span class="kv">Last reported <b>${fmt('2026-11-10')}</b></span>${enter ? `<span class="chip ${isExco() ? 'navy' : isHead() ? 'pink' : ''}">${isExco() ? 'Exco · reads all' : isHead() ? 'You head it' : 'Member'}</span>` : ''}</div>
+      <p class="lede" style="margin:0 0 12px;max-width:52ch">Finds things out for Save7 — why donors are deferred, why registrants drop out, what works on campus — so the rest of us decide on evidence.</p>
+      <div class="kv" style="margin-bottom:6px"><b>Working on</b></div><div class="objs"><span class="obj">Know why registrants drop out</span><span class="obj">Publish two Studies in 2026</span></div></div>${door}</div>
+    <div class="A-offers"><div class="card"><p class="card-label">Events</p><b class="strong">${esc(ev.name)}</b><div class="sm" style="margin:4px 0 8px">${fmt(ev.on)} · ${esc(ev.where)} · ${ev.signed} going</div><button class="btn sm" data-act="noop">Sign up</button></div>
+      <div class="card"><p class="card-label">Published</p><div class="flag" style="margin:0"><b>Open question.</b> Research offers everyone its Events. Should a <b>Published</b> Study — the PrEP campus map, say — be readable here by every member? The model reads Studies only behind this page, because of participants' data; a finished, public result may not carry any.</div></div></div>`;
+}
+function inside() {
+  const rooms = [['studies', 'Studies'], ['tracker', 'Department tracker']].concat(isBack() ? [['reports', 'Reports']] : []);
+  if (!rooms.some(r => r[0] === UI.room)) UI.room = 'studies';
+  const body = UI.room === 'tracker' ? trackerRoom() : UI.room === 'reports' ? reportsRoom() : UI.variant === 'A' ? roomA() : UI.variant === 'B' ? roomB() : roomC();
+  return `<div class="A-inside"><div class="A-ihead"><button class="back" data-act="out">← Research's front page</button>
+    <h2 class="title">Inside Research</h2><div class="sm">${isExco() ? 'Reading as National Exco' : isHead() ? 'You head it' : 'Member'}</div>
+    <div class="A-rooms" role="tablist">${rooms.map(([k, v]) => `<button role="tab" aria-selected="${UI.room === k}" data-act="room" data-room="${k}">${v}</button>`).join('')}</div></div>
+    <div class="A-ibody">${body}</div></div>`;
+}
+const trackerRoom = () => `<div class="card"><p class="card-label">Department tracker · against ${esc(nm('ruth'))}'s MOU</p>
+  <div class="kpi"><span>Studies published</span><div class="meter"><i style="width:50%"></i></div><span class="sm">1 of 2</span></div>
+  <div class="kpi"><span>Members running a Study</span><div class="meter"><i style="width:75%"></i></div><span class="sm">3 of 4</span></div></div>
+  <p class="note">Written by the Head by hand. Nothing here is computed from the board — “Studies published” is Ruth's figure, not a count of the Published column. (Unchanged from #60; shown for context.)</p>`;
+const reportsRoom = () => `<div class="li"><b class="strong sm">10 Nov</b><p class="sm" style="margin:4px 0 0">Deferral survey past 180 responses. Thabo has left Research — his interview Study needs a new lead. Asking Exco whether a published Study may go on our front page.</p></div><p class="note">Hidden from members, as #60 settled. Shown for context.</p>`;
+
+// =====================================================================
+// the Shell
+// =====================================================================
+function navHtml() {
+  const a = (t, act, extra = '', on = false, cls = '') => `<a href="#" class="${on ? 'active' : ''} ${cls}" data-act="${act}" ${extra}>${t}</a>`;
+  const research = canEnter() ? '<span class="mk"></span>' : standing() === 'pending' ? '<span class="mk ask"></span>' : '';
+  return `<li>${a('Dashboard', 'noop', '', false, 'dash')}</li>
+    <li class="grp">${a('National Centre <span class="chev">▾</span>', 'noop')}<ul>
+      <li>${a('All Projects', 'noop')}</li>
+      <li class="grp">${a('Departments <span class="chev">▾</span>', 'noop')}<ul>
+        <li>${a('Media <span class="grow"></span>', 'noop')}</li><li>${a('Tech <span class="uc-dot">· building</span>', 'noop')}</li>
+        <li>${a(`Research <span class="grow"></span>${isHead() ? '<span class="mk-head">Head</span>' : research}`, 'out', '', true)}</li>
+        <li>${a('Education <span class="uc-dot">· building</span>', 'noop')}</li></ul></li></ul></li>
+    <li>${a('OKRs', 'noop')}</li><li>${a('Operations', 'noop')}</li>`;
+}
+function colsModal() {
+  return `<div class="modalc" data-act="closeModal"><div class="box colsed" data-stop="1"><p class="eyebrow">Research board</p><h2 class="title" style="font-size:22px;margin:4px 0 6px">Columns</h2>
+    <p class="note" style="margin:0 0 12px">Yours as Head, with National Exco as backstop. They mean nothing to the model: the last one is simply where a Study ends.</p>
+    ${DB.cols.map((c, i) => { const n = DB.studies.filter(s => s.col === c.id).length; return `<div class="r"><input type="text" value="${esc(c.name)}" data-col-name="${c.id}"><button class="ibtn" data-act="colUp" data-i="${i}" ${i ? '' : 'disabled'}>↑</button><button class="ibtn" data-act="colDn" data-i="${i}" ${i < DB.cols.length - 1 ? '' : 'disabled'}>↓</button><button class="ibtn" data-act="colDel" data-i="${i}" ${n ? `disabled title="${n} Studies here — move them first"` : ''}>✕</button></div>`; }).join('')}
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="colAdd">+ Add a column</button><span class="grow"></span><button class="btn primary sm" data-act="colSave">Done</button></div>
+    <div class="flag"><b>Open question.</b> A Study “ends by reaching the last of the Head's columns — <i>Published</i> or <i>Abandoned</i>, say.” Here there are two ending columns. Is that right, or is it one last column and the outcome is said in the log?</div></div></div>`;
+}
+
+function render() {
+  if (UI.inside && !canEnter()) UI.inside = false;
+  if (UI.study && !S(UI.study)) UI.study = null;
+  document.getElementById('nav').innerHTML = navHtml();
+  const seat = SEATS[UI.seat];
+  const crumb = `National Centre / Departments / ${UI.inside ? `<a href="#" data-act="out">Research</a> / <b>${UI.room === 'studies' ? 'Studies' : UI.room === 'tracker' ? 'Department tracker' : 'Reports'}</b>` : '<b>Research</b>'}`;
+  document.getElementById('main').innerHTML = `<div class="topbar"><div class="crumb">Save7 OS / ${crumb}</div><div class="me"><div class="who"><b>${esc(nm(seat.id))}</b>${esc(seat.role)}</div><span class="av ${UI.seat === 'head' ? 'p' : ''}">${esc(initials(seat.id))}</span></div></div>` + (UI.inside ? inside() : front());
+  document.getElementById('modal').innerHTML = UI.cols ? colsModal() : UI.opening && UI.variant === 'A' ? modalA() : UI.inside && UI.room === 'studies' && UI.variant === 'A' && UI.study ? drawerA() : '';
+  UI.anim = false;
+  document.getElementById('fx').innerHTML = UI.justEntered ? `<div class="doors" aria-hidden="true"><i></i><i></i><b>Research</b></div>` : '';
+  if (UI.justEntered) { UI.justEntered = false; setTimeout(() => { document.getElementById('fx').innerHTML = ''; }, 900); }
+  document.getElementById('pswitch').innerHTML = `<button data-act="vprev" aria-label="Previous take">←</button><span class="lbl">${UI.variant} · ${VARIANTS[UI.variant]}</span><button data-act="vnext" aria-label="Next take">→</button>
+    <span class="sep"></span><span class="k">Seat</span>${Object.entries(SEATS).map(([k, s]) => `<button class="${UI.seat === k ? 'on' : ''}" data-act="seat" data-seat="${k}">${s.short}</button>`).join('')}
+    <span class="sep"></span><button data-act="reset">Reset</button>`;
+  const u = new URL(location); u.searchParams.set('variant', UI.variant); u.searchParams.set('seat', UI.seat); u.searchParams.set('inside', UI.inside ? '1' : '0'); history.replaceState(null, '', u);
+}
+
+// =====================================================================
+// acts
+// =====================================================================
+function create(title, q, kind, extra = {}) {
+  if (!title.trim()) { toast('Give it a title first.'); return null; }
+  const s = Object.assign({ id: 's' + (++DB.seq), title: title.trim(), question: q.trim() || '', kind, col: DB.cols[0].id, lead: me(), team: [me()],
+    pico: null, method: '', ethics: { st: 'none', ref: '', letter: null }, project: null, blocked: '', log: [], docs: [], jreq: [], jinv: [] }, extra);
+  DB.studies.push(s); toast(`“${s.title}” is on the board in ${DB.cols[0].name}, with you as lead.`); return s;
+}
+function cycle(n) { const ks = Object.keys(VARIANTS); UI.variant = ks[(ks.indexOf(UI.variant) + n + ks.length) % ks.length]; UI.opening = UI.draft = false; UI.edit = null; render(); }
+
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-stop]') && !e.target.closest('[data-act]')) return;
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  if (el.closest('[data-stop]') && (el.dataset.act === 'closeStudy' || el.dataset.act === 'closeModal') && el.classList.contains('scrim')) return;
+  if ((el.classList.contains('scrim') || el.classList.contains('modalc')) && e.target !== el) return;
+  e.preventDefault();
+  const a = el.dataset.act, s = el.dataset.id ? S(el.dataset.id) : null, who = el.dataset.who;
+  switch (a) {
+    case 'vprev': return cycle(-1);
+    case 'vnext': return cycle(1);
+    case 'seat': UI.seat = el.dataset.seat; UI.edit = null; UI.opening = UI.draft = UI.cols = false; toast(SEATS[UI.seat].note); break;
+    case 'reset': DB = seed(); Object.assign(UI, { study: null, edit: null, opening: false, draft: false, cols: false, filter: 'all' }); toast('Reset.'); break;
+    case 'noop': toast('Not part of this prototype.'); return;
+    case 'enter': UI.inside = true; UI.justEntered = true; UI.room = 'studies'; window.scrollTo(0, 0); break;
+    case 'out': UI.inside = false; UI.study = null; UI.edit = null; break;
+    case 'room': UI.room = el.dataset.room; UI.study = UI.variant === 'C' ? UI.study : null; UI.opening = false; break;
+    case 'askJoin': DB.requests.push({ who: me(), on: TODAY }); toast('Asked to join Research. It waits on Ruth\'s Dashboard.'); break;
+    case 'withdrawJoin': DB.requests = DB.requests.filter(r => r.who !== me()); toast('Request withdrawn.'); break;
+    case 'openStudy': UI.study = el.dataset.id; UI.edit = null; UI.anim = true; if (UI.variant === 'B') window.scrollTo(0, 0); break;
+    case 'pick': UI.study = el.dataset.id; UI.edit = null; break;
+    case 'closeStudy': UI.study = null; UI.edit = null; break;
+    case 'closeModal': UI.opening = false; UI.cols = false; break;
+    case 'filter': UI.filter = el.dataset.f; UI.study = null; break;
+    case 'ctab': UI.ctab = el.dataset.t; UI.edit = null; break;
+    case 'edit': UI.edit = s.id; if (UI.variant === 'C') UI.ctab = 'overview'; break;
+    case 'cancelEdit': UI.edit = null; break;
+    case 'save': { const p = { P: val('e-P'), I: val('e-I'), C: val('e-C'), O: val('e-O') };
+      Object.assign(s, { title: val('e-title') || s.title, question: val('e-q'), kind: val('e-kind'), method: val('e-method'), pico: Object.values(p).some(v => v.trim()) ? p : null });
+      UI.edit = null; toast('Saved.'); break; }
+    case 'eth': {
+      const v = el.dataset.v;
+      if (v === 'approved') { const ref = prompt('Approval reference (e.g. UJ REC 2026-114):', s.ethics.ref) ; if (ref === null) return; const f = prompt('The letter (file name):', 'Ethics approval letter.pdf'); if (!f) { toast('An approval goes with its letter.'); return; }
+        const d = { id: 'd' + (++DB.seq), name: f, by: me(), on: TODAY, eth: true }; s.docs.unshift(d); s.ethics = { st: 'approved', ref, letter: d.id }; }
+      else s.ethics = { st: v, ref: v === 'none' ? '' : s.ethics.ref, letter: null };
+      toast(ETH[v] + '. Nothing else changes — no column cares.'); break; }
+    case 'log': { const t = val('log-' + s.id).trim(); if (!t) { toast('Write what happened first.'); return; } s.log.unshift({ on: TODAY, by: me(), text: t }); toast('Logged.'); break; }
+    case 'addDoc': { const f = prompt('File name (pretend upload):', 'Notes.docx'); if (!f) return; s.docs.push({ id: 'd' + (++DB.seq), name: f, by: me(), on: TODAY }); toast('Added. Only Research reads it.'); break; }
+    case 'delDoc': { const d = s.docs.find(x => x.id === el.dataset.doc); if (!confirm(`Remove ${d.name}?`)) return; s.docs = s.docs.filter(x => x !== d); if (s.ethics.letter === d.id) s.ethics = { st: 'pending', ref: s.ethics.ref, letter: null }; toast('Removed.'); break; }
+    case 'block': { const n = prompt('What is it waiting on? (free text — it names no unit)'); if (!n) return; s.blocked = n; toast('Flagged. It stays in its column.'); break; }
+    case 'unblock': s.blocked = ''; break;
+    case 'moveTo': s.col = el.dataset.col; toast(`Moved to ${col(s.col).name}.${s.ethics.st === 'pending' && ['k3', 'k4'].includes(s.col) ? ' Ethics is still pending — recorded, not enforced.' : ''}`); break;
+    case 'jask': s.jreq.push({ who: me(), on: TODAY }); toast(`Asked. It waits on ${nm(s.lead)}, here on the Study.`); break;
+    case 'jwdme': s.jreq = s.jreq.filter(r => r.who !== me()); toast('Withdrawn.'); break;
+    case 'jyes': s.jreq = s.jreq.filter(r => r.who !== who); s.team.push(who); toast(`${nm(who)} is on the team and writes the Study now.`); break;
+    case 'jno': { const r = prompt('A reason? (optional — they\'ll see it)', ''); if (r === null) return; s.jreq = s.jreq.filter(x => x.who !== who); toast(`Declined ${nm(who)}.`); break; }
+    case 'jinv': { const p = val('inv-' + s.id); if (!p) return; s.jinv.push({ who: p, on: TODAY }); toast(`Invited ${nm(p)}. They accept or decline on the Study.`); break; }
+    case 'jwd': s.jinv = s.jinv.filter(r => r.who !== who); break;
+    case 'jacc': s.jinv = s.jinv.filter(r => r.who !== me()); s.team.push(me()); toast('You\'re on the team.'); break;
+    case 'jdec': s.jinv = s.jinv.filter(r => r.who !== me()); toast('Declined.'); break;
+    case 'jleave': s.team = s.team.filter(p => p !== me()); toast('You left the team. You still read the Study.'); break;
+    case 'newLead': { const p = val('nl-' + s.id); if (!p) return; s.lead = p; toast(`${nm(p)} leads it now.`); break; }
+    case 'del': if (!confirm(`Delete “${s.title}”? Its log and documents go with it.`)) return; DB.studies = DB.studies.filter(x => x !== s); UI.study = null; toast('Deleted.'); break;
+    case 'newA': UI.opening = true; setTimeout(() => document.getElementById('n-title')?.focus()); break;
+    case 'createA': { const n = create(val('n-title'), val('n-q'), val('n-kind')); if (!n) return; UI.opening = false; UI.study = n.id; UI.anim = true; break; }
+    case 'newB': UI.opening = true; UI.study = null; window.scrollTo(0, 0); break;
+    case 'createB': { const p = { P: val('n-P'), I: val('n-I'), C: val('n-C'), O: val('n-O') };
+      if (!val('n-q').trim()) { toast('The question is the one thing a Study needs from the start.'); return; }
+      const n = create(val('n-title'), val('n-q'), val('n-kind'), { method: val('n-method'), pico: document.getElementById('n-pico').checked && Object.values(p).some(v => v.trim()) ? p : null,
+        ethics: { st: document.querySelector('input[name=n-eth]:checked').value, ref: '', letter: null } }); if (!n) return; UI.opening = false; UI.study = n.id; break; }
+    case 'cancelNew': UI.opening = false; UI.draft = false; break;
+    case 'newC': UI.draft = true; UI.filter = 'all'; setTimeout(() => document.getElementById('n-title')?.focus()); break;
+    case 'createC': { const n = create(val('n-title'), '', val('n-kind')); if (!n) return; UI.draft = false; UI.study = n.id; UI.edit = n.id; UI.ctab = 'overview'; break; }
+    case 'cols': UI.cols = true; break;
+    case 'colUp': case 'colDn': { readCols(); const i = +el.dataset.i, j = a === 'colUp' ? i - 1 : i + 1; [DB.cols[i], DB.cols[j]] = [DB.cols[j], DB.cols[i]]; break; }
+    case 'colDel': readCols(); DB.cols.splice(+el.dataset.i, 1); break;
+    case 'colAdd': readCols(); DB.cols.splice(DB.cols.length - 2, 0, { id: 'k' + (++DB.seq), name: 'New column' }); break;
+    case 'colSave': readCols(); UI.cols = false; toast('Columns saved. No Study moved.'); break;
+  }
+  render();
+});
+function readCols() { document.querySelectorAll('[data-col-name]').forEach(i => { const c = col(i.dataset.colName); if (c && i.value.trim()) c.name = i.value.trim(); }); }
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-act-change]'); if (!el) return;
+  if (el.dataset.actChange === 'pico') { document.getElementById('pico-f').style.display = el.checked ? 'grid' : 'none'; return; }
+  if (el.dataset.actChange === 'move') { const s = S(el.dataset.id); s.col = el.value; toast(`Moved to ${col(s.col).name}.${s.ethics.st === 'pending' ? ' Ethics is still pending — recorded, not enforced.' : ''}`); render(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1); else if (e.key === 'ArrowRight') cycle(1);
+  else if (e.key === 'Escape') { UI.study = UI.variant === 'C' ? UI.study : null; UI.opening = UI.cols = false; UI.edit = null; render(); }
+  else if (e.key === 'Enter' && e.target.dataset && e.target.dataset.act === 'openStudy') e.target.click();
+});
+render();
+</script>
+</body>
+</html>
